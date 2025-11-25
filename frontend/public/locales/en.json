@@ -1,0 +1,68 @@
+{
+  "header": {
+    "title": "Digital Handover System",
+    "languageSwitch": "Language Switch",
+    "login": "Login",
+    "logout": "Logout"
+  },
+  "navigation": {
+    "home": "Home",
+    "reports": "Reports",
+    "settings": "Settings",
+    "admin": "Admin"
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "submit": "Submit",
+    "edit": "Edit",
+    "delete": "Delete",
+    "create": "Create",
+    "update": "Update",
+    "search": "Search",
+    "filter": "Filter",
+    "reset": "Reset",
+    "confirm": "Confirm",
+    "yes": "Yes",
+    "no": "No",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "close": "Close",
+    "ok": "OK",
+    "error": "Error",
+    "success": "Success",
+    "warning": "Warning",
+    "info": "Info",
+    "date": "Date",
+    "shift": "Shift",
+    "area": "Area",
+    "author": "Author"
+  },
+  "reports": {
+    "title": "Daily Report",
+    "attendance": "Attendance Status",
+    "equipmentAbnormalities": "Equipment Abnormalities",
+    "abnormalLots": "Abnormal Lots",
+    "summary": "Summary",
+    "keyMachineOutput": "Key Machine Output",
+    "keyIssues": "Key Issues",
+    "countermeasures": "Countermeasures"
+  },
+  "login": {
+    "title": "Login",
+    "username": "Username",
+    "password": "Password",
+    "rememberMe": "Remember me",
+    "forgotPassword": "Forgot password?",
+    "signIn": "Sign In"
+  },
+  "errors": {
+    "requiredField": "This field is required",
+    "invalidFormat": "Invalid format",
+    "networkError": "Network error",
+    "serverError": "Server error",
+    "unauthorized": "Unauthorized",
+    "notFound": "Page not found"
+  }
+}

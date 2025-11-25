@@ -1,0 +1,68 @@
+{
+  "header": {
+    "title": "電子引継システム",
+    "languageSwitch": "言語切替",
+    "login": "ログイン",
+    "logout": "ログアウト"
+  },
+  "navigation": {
+    "home": "ホーム",
+    "reports": "レポート",
+    "settings": "設定",
+    "admin": "管理"
+  },
+  "common": {
+    "save": "保存",
+    "cancel": "キャンセル",
+    "submit": "送信",
+    "edit": "編集",
+    "delete": "削除",
+    "create": "新規作成",
+    "update": "更新",
+    "search": "検索",
+    "filter": "フィルター",
+    "reset": "リセット",
+    "confirm": "確認",
+    "yes": "はい",
+    "no": "いいえ",
+    "back": "戻る",
+    "next": "次へ",
+    "previous": "前へ",
+    "close": "閉じる",
+    "ok": "OK",
+    "error": "エラー",
+    "success": "成功",
+    "warning": "警告",
+    "info": "情報",
+    "date": "日付",
+    "shift": "シフト",
+    "area": "エリア",
+    "author": "作成者"
+  },
+  "reports": {
+    "title": "日報",
+    "attendance": "出勤状況",
+    "equipmentAbnormalities": "設備異常",
+    "abnormalLots": "異常ロット",
+    "summary": "まとめ",
+    "keyMachineOutput": "主要機械出力",
+    "keyIssues": "主要課題",
+    "countermeasures": "対策"
+  },
+  "login": {
+    "title": "ログイン",
+    "username": "ユーザー名",
+    "password": "パスワード",
+    "rememberMe": "ログイン状態を保持",
+    "forgotPassword": "パスワードをお忘れですか？",
+    "signIn": "ログイン"
+  },
+  "errors": {
+    "requiredField": "この項目は必須です",
+    "invalidFormat": "形式が無効です",
+    "networkError": "ネットワークエラー",
+    "serverError": "サーバーエラー",
+    "unauthorized": "未承認",
+    "notFound": "ページが見つかりません"
+  }
+}
