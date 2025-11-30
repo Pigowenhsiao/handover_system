@@ -1,31 +1,27 @@
 """
-電子交接本系統主入口點
-基於 FastAPI 和 tkinter 的多語言支持系統
+電子交接本系統 - 前端桌面應用程式啟動腳本
 """
-import os
-import sys
-from pathlib import Path
+import tkinter as tk
+from frontend.main import MainApplication
 
-# 添加根目錄到 Python 路徑
-root_dir = Path(__file__).parent
-sys.path.insert(0, str(root_dir))
-
-from backend.main import app
-from backend.core.config import settings
 
 def main():
-    """主執行函數"""
-    print("正在啟動電子交接本系統...")
-    print(f"數據庫位置: {settings.DATABASE_URL}")
-    print("系統初始化完成，正在啟動伺服器...")
+    """主函數"""
+    root = tk.Tk()
+    app = MainApplication(root)
     
-    import uvicorn
-    uvicorn.run(
-        "backend.main:app",
-        host=settings.HOST,
-        port=settings.PORT,
-        reload=settings.RELOAD
-    )
+    # 設置窗口關閉事件
+    def on_closing():
+        if tk.messagebox.askokcancel(
+            app.lang_manager.get_text("common.quit", "退出"),
+            app.lang_manager.get_text("common.confirmQuit", "確定要退出電子交接系統嗎？")
+        ):
+            root.destroy()
+    
+    root.protocol("WM_DELETE_WINDOW", on_closing)
+    
+    root.mainloop()
+
 
 if __name__ == "__main__":
     main()

@@ -1,0 +1,12 @@
+{
+    "areas": [
+        "etching_D",
+        "etching_E",
+        "litho",
+        "thin_film"
+    ],
+    "shifts": [
+        "Day",
+        "Night"
+    ]
+}
