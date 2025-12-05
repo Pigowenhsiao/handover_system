@@ -9,3 +9,5 @@ python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 pyjwt==2.8.0
 pydantic-settings==2.4.0
+tk  # 標準 GUI 套件，若環境無內建 tkinter 請安裝對應系統套件（apt: python3-tk, dnf: python3-tkinter, pacman: tk, brew: python-tk@3.9）
+requests>=2.31.0

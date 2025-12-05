@@ -2,7 +2,7 @@
 
 ## 1. 系統概述 (System Overview)
 
-電子交接本系統是一個支援多語言的桌面應用程式，用於記錄和管理生產線的日常交接工作。系統支援日文、中文和英文三種語言，並允許管理員管理使用者帳戶、記錄設備異常、追蹤異常批次、記錄出勤情況等。
+電子交接本系統是一個支援多語言的桌面應用程式，用於記錄和管理生產線的日常交接。支援日文/中文/英文，涵蓋使用者管理、設備異常、批次追蹤、出勤記錄；單機部署，資料庫為本機 SQLite，無需伺服器。
 
 ## 2. 開發環境設置 (Development Environment Setup)
 
@@ -11,9 +11,10 @@
 - **Python 版本**: 3.9 或更高版本
 - **記憶體**: 最少 2GB RAM
 - **硬碟空間**: 最少 100MB 可用空間
+- **資料庫**: 無需外部 DB 伺服器，使用本機 SQLite 檔案
 
 ### 2.2 依賴套件 (Dependencies)
-系統需要以下 Python 套件:
+系統需要以下 Python 套件（內建的 sqlite3、tkinter 無需另裝）:
 - python >= 3.9
 - sqlite3 (Python 內建)
 - tkinter (Python 內建)
@@ -47,26 +48,23 @@ handover_system/
 ## 3. 開始使用 (Getting Started)
 
 ### 3.1 首次運行 (First Run)
-1. 克隆或下載專案到本地目錄
-2. 安裝所需的依賴套件
-3. 執行主程式: `python main.py`
-4. 系統將自動創建數據庫和初始管理員帳戶 (用戶名: admin, 密碼: 1234)
+1. 克隆或下載專案到本地
+2. 安裝依賴
+3. 執行 `python main.py`（或 Windows 雙擊 `start.bat`）
+4. 系統會在本機建立 SQLite 資料庫並建立初始管理員 (admin/1234)
 
 ### 3.2 系統初始化 (System Initialization)
-首次啟動時，系統會自動:
-- 創建 SQLite 數據庫文件
-- 建立所有必要的數據表
-- 添加默認管理員帳戶
+首次啟動自動完成：
+- 本機建立 SQLite 數據庫檔
+- 建立所有必要的資料表
+- 添加預設管理員帳戶
 - 載入初始語言資源
 
 ## 4. 主要功能使用 (Main Features Usage)
 
 ### 4.1 登入系統 (Login to System)
 1. 啟動應用程式
-2. 在登入介面輸入用戶名和密碼
-3. 默認管理員帳戶:
-   - 用戶名: admin
-   - 密碼: 1234
+2. 輸入帳密；預設管理員：`admin` / `1234`
 
 ### 4.2 語言切換 (Language Switching)
 - 使用頂部工具欄的語言選擇器
@@ -74,20 +72,17 @@ handover_system/
 - 界面標示會即時更新
 
 ### 4.3 填寫日報表 (Filling Daily Reports)
-1. 點擊「填寫日報」按鈕
-2. 選擇日期、班別和區域
-3. 填寫 Key Output、Issues 和 Countermeasures
-4. 記錄出勤情況、設備異常、異常批次等信息
-5. 點擊「保存」按鈕
+1. 點擊「填寫日報」
+2. 填入日期、班別、區域
+3. 填寫 Key Output / Issues / Countermeasures
+4. 填寫出勤、設備異常、異常批次
+5. 按「保存」
 
 ### 4.4 管理使用者 (User Management)
-1. 註冊或管理員帳號登入
-2. 點擊「使用者管理」按鈕
-3. 在新視窗中管理使用者
-   - 新增使用者
-   - 修改使用者資料
-   - 刪除使用者
-4. 點擊「保存」或「取消」按鈕結束操作
+1. 以管理員登入
+2. 點擊「使用者管理」
+3. 在新視窗中新增/修改/刪除帳戶
+4. 按「保存」或「取消」
 
 ## 5. 開發指南 (Development Guide)
 
@@ -113,7 +108,7 @@ handover_system/
 
 ## 6. API 接口 (API Interfaces)
 
-系統主要為桌面應用，無傳統 REST API，但包含以下組件接口:
+系統為桌面應用，無對外 REST API；以下為內部介面：
 
 ### 6.1 資料庫接口 (Database Interface)
 - `create_user(username, password, role)`: 創建用戶
@@ -142,13 +137,13 @@ handover_system/
 ## 8. 部署 (Deployment)
 
 ### 8.1 桌面應用部署 (Desktop App Deployment)
-1. 使用 PyInstaller 打包:
+1. 使用 PyInstaller 打包：
 ```bash
 pip install pyinstaller
 pyinstaller --onefile --windowed --add-data "locale;locale" main.py
 ```
-2. 將生成的可執行文件分發給用戶
-3. 確保目標系統安裝了必要的依賴
+2. 分發可執行檔
+3. 確保目標機可讀寫本機 SQLite 檔（無需部署 DB 伺服器）
 
 ### 8.2 配置文件 (Configuration Files)
 所有配置保存在 `configs/` 目錄中:
@@ -159,15 +154,13 @@ pyinstaller --onefile --windowed --add-data "locale;locale" main.py
 ## 9. 維護與支援 (Maintenance and Support)
 
 ### 9.1 數據備份 (Data Backup)
-定期備份 SQLite 數據庫文件以確保數據安全:
-- 數據庫路徑: `handover_system.db`
-- 建議每天備份一次
+定期備份 `handover_system.db`（建議每日一次），確保數據安全。
 
 ### 9.2 更新系統 (Updating the System)
-1. 備份現有數據庫和配置文件
-2. 替換應用程式文件
-3. 執行數據庫遷移腳本（如有需要）
-4. 測試系統功能
+1. 備份資料庫與配置
+2. 更新應用檔案
+3. 如需，執行資料庫遷移腳本
+4. 驗證主要功能
 
 ## 10. 安全性注意事項 (Security Considerations)
 

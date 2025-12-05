@@ -30,7 +30,7 @@ Analyzing the specification for multi-language UI label conversion in the electr
 ## 4. Architecture Consistency Check
 
 ### 4.1 Technology Stack Alignment
-- Python backend with SQLite database ✅
+- Python backend with SQLite database (本機檔案，單機部署，無外部 DB 伺服器) ✅
 - Tkinter frontend for desktop application ✅
 - i18n for multi-language support ✅
 - Direct file-based translation resources ✅

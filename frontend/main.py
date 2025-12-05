@@ -7,9 +7,24 @@ from tkinter import ttk, messagebox, filedialog
 from datetime import datetime
 import json
 import os
-import requests
 import threading
 from pathlib import Path
+
+try:
+    import requests
+except ImportError:
+    requests = None
+
+
+def ensure_requests_installed():
+    """若缺 requests，提示使用者安裝並中止當前操作。"""
+    if requests is None:
+        messagebox.showerror(
+            "缺少依賴",
+            "未安裝 requests，請先執行：pip install -r requirements.txt"
+        )
+        return False
+    return True
 
 
 class LoginScreen:
@@ -87,6 +102,8 @@ class LoginScreen:
         """處理登入邏輯"""
         username = self.username_var.get()
         password = self.password_var.get()
+        if not ensure_requests_installed():
+            return
         
         try:
             # 在實際應用中，這裡的 URL 應該從配置文件讀取
@@ -703,11 +720,11 @@ class MainApplication:
             self.lang_manager.get_text("common.quit", "退出"),
             self.lang_manager.get_text("common.confirmQuit", "確定要退出電子交接系統嗎？")
         ):
-                def show_login_screen(self):
-                    """顯示登入畫面"""
-                    LoginScreen(self.root, self.lang_manager, self.login_success)    def show_login_screen(self):
+            self.root.destroy()
+
+    def show_login_screen(self):
         """顯示登入畫面"""
-        LoginScreen(self.root, self.login_success)
+        LoginScreen(self.root, self.lang_manager, self.login_success)
 
     def login_success(self, token):
         """登入成功後的回調"""
@@ -719,6 +736,9 @@ class MainApplication:
     def fetch_current_user(self):
         """獲取當前使用者資訊並更新UI"""
         if not self.access_token:
+            return
+        if not ensure_requests_installed():
+            self.welcome_label.config(text=self.lang_manager.get_text("login.welcome_offline", "歡迎 (離線)"))
             return
         
         try:
@@ -1036,23 +1056,24 @@ class MainApplication:
         if hasattr(self, 'add_lot_btn'):
             self.add_lot_btn.config(text=self.lang_manager.get_text("common.add", "添加記錄"))
 
-        def update_master_data_tab_language(self):
-            """更新基本資料管理頁面語言"""
-            if hasattr(self, 'master_data_frame'):
-                self.master_data_frame.config(text=self.lang_manager.get_text("navigation.masterData", "基本資料管理"))
-            if hasattr(self, 'area_input_label'):
-                self.area_input_label.config(text=f"{self.lang_manager.get_text('common.area', '區域')}:")
-            if hasattr(self, 'add_area_btn'):
-                self.add_area_btn.config(text=self.lang_manager.get_text('common.create', '新增'))
-            if hasattr(self, 'update_area_btn'):
-                self.update_area_btn.config(text=self.lang_manager.get_text('common.update', '更新'))
-            if hasattr(self, 'delete_area_btn'):
-                self.delete_area_btn.config(text=self.lang_manager.get_text('common.delete', '刪除'))
-            # 重新填充 Treeview
-            if hasattr(self, 'area_tree'):
-                self.area_tree.heading("AreaName", text=self.lang_manager.get_text("common.areaName", "區域名稱"))
-                # self.populate_area_list() # 這行不需要，因為 populate_area_list 不會翻譯內容
-    		    def update_summary_tab_language(self):
+    def update_master_data_tab_language(self):
+        """更新基本資料管理頁面語言"""
+        if hasattr(self, 'master_data_frame'):
+            self.master_data_frame.config(text=self.lang_manager.get_text("navigation.masterData", "基本資料管理"))
+        if hasattr(self, 'area_input_label'):
+            self.area_input_label.config(text=f"{self.lang_manager.get_text('common.area', '區域')}:")
+        if hasattr(self, 'add_area_btn'):
+            self.add_area_btn.config(text=self.lang_manager.get_text('common.create', '新增'))
+        if hasattr(self, 'update_area_btn'):
+            self.update_area_btn.config(text=self.lang_manager.get_text('common.update', '更新'))
+        if hasattr(self, 'delete_area_btn'):
+            self.delete_area_btn.config(text=self.lang_manager.get_text('common.delete', '刪除'))
+        # 重新填充 Treeview
+        if hasattr(self, 'area_tree'):
+            self.area_tree.heading("AreaName", text=self.lang_manager.get_text("common.areaName", "區域名稱"))
+            # self.populate_area_list() # 這行不需要，因為 populate_area_list 不會翻譯內容
+
+    def update_summary_tab_language(self):
         """更新總結頁面語言"""
         if hasattr(self, 'output_frame'):
             self.output_frame.config(text=self.lang_manager.get_text("summary.keyOutput", "Key Machine Output"))

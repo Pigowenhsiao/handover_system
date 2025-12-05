@@ -14,12 +14,12 @@
 **Language/Version**: Python 3.9+ (for desktop application)
 **Primary Dependencies**:
   - SQLAlchemy (for database ORM)
-  - SQLite (for database)
+  - SQLite (for database; local file on same machine)
   - bcrypt (for password hashing)
   - Pillow (PIL) (for image processing)
   - i18n (for internationalization)
   - tkinter (for desktop GUI)
-**Storage**: SQLite database file with JSON files for multilingual resources
+**Storage**: SQLite database file (local, same machine) with JSON files for multilingual resources
 **Testing**: pytest for unit and integration tests
 **Target Platform**: Cross-platform desktop application (Windows, macOS, Linux)
 **Project Type**: Standalone desktop application with embedded database
@@ -29,11 +29,12 @@
   - Support up to 10,000 daily reports
 **Constraints**:
   - Must run as standalone application without network dependency
+  - No external database server; SQLite file stored and accessed locally
   - Must support Japanese, Chinese and English interfaces
   - Must handle simultaneous Regular and Contractor attendance records
   - Must maintain user session data locally
 **Scale/Scope**: Designed for manufacturing facility with up to 50 daily users across multiple shifts
-**Storage**: SQLite database file with JSON files for multilingual resources
+**Storage**: SQLite database file (local, same machine) with JSON files for multilingual resources
 **Testing**: pytest for unit and integration tests
 **Target Platform**: Cross-platform desktop application (Windows, macOS, Linux)
 **Project Type**: Standalone desktop application with embedded database
@@ -43,6 +44,7 @@
   - Support up to 10,000 daily reports
 **Constraints**:
   - Must run as standalone application without network dependency
+  - No external database server; SQLite file stored and accessed locally
   - Must support Japanese, Chinese and English interfaces
   - Must handle simultaneous Regular and Contractor attendance records
   - Must maintain user session data locally
