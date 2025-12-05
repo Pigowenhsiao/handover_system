@@ -1,13 +1,5 @@
-# 電子交接系統後端依賴
-fastapi==0.104.1
-uvicorn==0.24.0
+# 電子交接本 Streamlit 版依賴
+streamlit==1.31.0
 sqlalchemy==2.0.23
+pandas==2.2.0
 bcrypt==4.0.1
-pillow>=10.1.0
-python-multipart==0.0.6
-python-jose[cryptography]==3.3.0
-passlib[bcrypt]==1.7.4
-pyjwt==2.8.0
-pydantic-settings==2.4.0
-tk  # 標準 GUI 套件，若環境無內建 tkinter 請安裝對應系統套件（apt: python3-tk, dnf: python3-tkinter, pacman: tk, brew: python-tk@3.9）
-requests>=2.31.0

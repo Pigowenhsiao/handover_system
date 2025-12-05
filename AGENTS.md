@@ -16,3 +16,6 @@ Use `@/openspec/AGENTS.md` to learn:
 Keep this managed block so 'openspec update' can refresh the instructions.
 
 <!-- OPENSPEC:END -->
+
+## Communication
+- 與使用者互動時一律使用繁體中文回覆，無論使用者使用何種語言。

@@ -46,15 +46,17 @@
 ## 4. 系統管理功能
 - **使用者管理**：管理員可以新增、刪除和修改使用者帳號資訊，包括使用者名稱、角色和密碼。
 
-## 5. 技術架構澄清
-- **方案A (完整Web框架)**：使用 Flask/FastAPI + React/Vue 的完整 Web 框架，提供最大的靈活性和可擴展性
-- **方案C (桌面應用)**：使用 PyQt 或 Tkinter 的桌面應用，資料本地儲存
+## 5. 技術架構澄清（單機 Streamlit）
+- UI：使用 Streamlit，透過 Sidebar 導航，所有介面文字使用繁體中文。
+- 資料庫：本機 SQLite，透過 SQLAlchemy 操作，禁止 Raw SQL。
+- 認證：Session State + Bcrypt（或 Streamlit-Authenticator），不使用 JWT（單機不需 API）。
+- 架構：單機執行，不需後端 API；與 PDF 邏輯結構對齊，出勤/設備異常/異常批次使用 `st.data_editor`。
 
 ## 6. 已澄清問題
-### 2025-11-25 會議決議
+### 2025-11-25 會議決議（更新）
 - **Q**: 技術架構採用哪種方案？
-  - **A**: 採用方案A (完整Web框架)：使用 Flask/FastAPI + React/Vue 的完整 Web 框架
+  - **A**: 採用單機 Streamlit + SQLite（無 Flask/FastAPI，無前後端分離）。
 - **Q**: 是否需要使用者管理介面？
-  - **A**: 是，系統管理員需要一個維護介面來管理使用者帳號（新增、刪除、修改）
+  - **A**: 是，系統管理員需要一個維護介面來管理使用者帳號（新增、刪除、修改）。
 - **Q**: 使用者認證方式？
-  - **A**: 採用基於 JWT (JSON Web Token) 或 Session 的使用者認證系統
+  - **A**: 採用 Session State + Bcrypt（或 Streamlit-Authenticator），不使用 JWT。

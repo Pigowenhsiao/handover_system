@@ -2,11 +2,10 @@
 
 ## 1. 技術堆疊 (Tech Stack)
 - **語言**: Python 3.9+
-- **後端框架**: Flask 或 FastAPI (提供 RESTful API 服務)
-- **前端框架**: React 或 Vue.js (動態用戶界面)
-- **資料庫**: PostgreSQL 或 MySQL (伺服器式資料庫，支援併發訪問)
-- **ORM**: SQLAlchemy (用於資料庫操作)
-- **認證**: 基於 JWT (JSON Web Token) 或 Session 的使用者認證系統
+- **前端框架**: Streamlit（單機本機 UI，不需額外後端服務或 API）
+- **資料庫**: SQLite（檔案型，離線可用）
+- **ORM**: SQLAlchemy（禁止 Raw SQL，避免注入風險）
+- **認證**: Session State + Bcrypt（或 Streamlit-Authenticator），不使用 JWT（單機無 API 需求）
 
 ## 2. 資料庫 Schema (SQLAlchemy Models)
 
@@ -15,8 +14,6 @@
 - username (String, Unique)
 - password_hash (String)
 - role (String: 'admin', 'user')
-- created_at (DateTime)
-- updated_at (DateTime)
 
 ### DailyReport Table (主表)
 - id (PK)
@@ -57,9 +54,10 @@
 - notes (Text)
 
 ## 3. UI/UX 規劃
-- **使用者管理頁面**：管理員可以進行使用者的新增、刪除和修改操作
+- **側邊欄導航**：登入者資訊、填寫日報、歷史查詢、登出。
 - **填寫頁面 (Entry Page)**:
-  - 使用動態表單處理「設備異常」與「異常批次」的多筆資料輸入
+  - 使用 `st.form` 包裹提交按鈕。
+  - 使用 `st.data_editor` 處理「出勤」、「設備異常」、「異常批次」多筆輸入。
   - 圖片上傳功能，儲存至 `uploads/` 資料夾並記錄路徑
-- **查詢頁面**：提供日期和區域篩選條件，顯示歷史報表清單
-- **響應式設計**：支援不同尺寸的螢幕裝置
+- **查詢頁面**：提供日期、區域篩選，顯示歷史報表清單
+- **語系**：UI 文字使用繁體中文；多語切換需求可由翻譯資源表支援。
