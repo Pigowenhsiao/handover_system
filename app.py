@@ -27,6 +27,9 @@ from models import (
     init_db,
 )
 
+# 版本資訊
+VERSION = "v0.3.1-桌面多語"
+
 # 語言資源
 LANGS = {"ja": "日本語", "en": "English", "zh": "繁體中文"}
 TEXTS: Dict[str, Dict[str, str]] = {
@@ -48,21 +51,51 @@ TEXTS: Dict[str, Dict[str, str]] = {
     "shift_label": {"ja": "シフト", "en": "Shift", "zh": "班別"},
     "area_label": {"ja": "エリア", "en": "Area", "zh": "區域"},
     "attendance": {"ja": "出勤状況", "en": "Attendance", "zh": "出勤狀況"},
+    "att_category": {"ja": "区分", "en": "Category", "zh": "分類"},
+    "att_scheduled": {"ja": "定員", "en": "Scheduled", "zh": "定員"},
+    "att_present": {"ja": "出勤", "en": "Present", "zh": "出勤"},
+    "att_absent": {"ja": "欠勤", "en": "Absent", "zh": "欠勤"},
+    "att_reason": {"ja": "理由", "en": "Reason", "zh": "理由"},
     "equipment": {"ja": "設備異常", "en": "Equipment Issues", "zh": "設備異常"},
+    "equip_id": {"ja": "設備番号", "en": "Equipment ID", "zh": "設備番号"},
+    "equip_desc": {"ja": "異常内容", "en": "Description", "zh": "異常內容"},
+    "equip_start": {"ja": "発生時刻", "en": "Start Time", "zh": "發生時刻"},
+    "equip_impact": {"ja": "影響数量", "en": "Impact Qty", "zh": "影響數量"},
+    "equip_action": {"ja": "対応内容", "en": "Action Taken", "zh": "對應內容"},
+    "equip_image": {"ja": "画像パス", "en": "Image Path", "zh": "圖片路徑"},
     "lot": {"ja": "異常ロット", "en": "Abnormal LOT", "zh": "本日異常批次"},
+    "lot_id_col": {"ja": "ロット", "en": "Lot ID", "zh": "批號"},
+    "lot_desc": {"ja": "異常内容", "en": "Description", "zh": "異常內容"},
+    "lot_status": {"ja": "処置状況", "en": "Status", "zh": "處置狀況"},
+    "lot_notes": {"ja": "特記事項", "en": "Notes", "zh": "特記事項"},
     "summary": {"ja": "サマリー", "en": "Summary", "zh": "總結"},
     "import_excel": {"ja": "Excel 取り込み（準備中）", "en": "Import Excel (coming soon)", "zh": "匯入 Excel（即將提供）"},
     "submit": {"ja": "送信", "en": "Submit", "zh": "提交"},
+    "save_update": {"ja": "保存/更新", "en": "Save / Update", "zh": "存檔/更新"},
+    "confirm_upload": {"ja": "確認アップロード", "en": "Confirm Upload", "zh": "確認上傳"},
+    "clear_form": {"ja": "クリア", "en": "Clear", "zh": "清空"},
     "load_existing": {"ja": "既存読み込み", "en": "Load Existing", "zh": "載入既有資料"},
     "add": {"ja": "追加", "en": "Add", "zh": "新增"},
     "success": {"ja": "成功", "en": "Success", "zh": "成功"},
     "submit_ok": {"ja": "送信しました。", "en": "Submitted successfully.", "zh": "提交成功！"},
+    "submit_updated": {"ja": "更新しました。", "en": "Updated successfully.", "zh": "更新成功！"},
     "error": {"ja": "エラー", "en": "Error", "zh": "錯誤"},
     "empty_data": {"ja": "データがありません", "en": "No data found", "zh": "查無資料"},
     "report_att": {"ja": "人員出勤レポート", "en": "Attendance Report", "zh": "人員出勤報表"},
     "report_equip": {"ja": "設備異常レポート", "en": "Equipment Report", "zh": "設備異常報表"},
     "report_lot": {"ja": "異常LOTレポート", "en": "LOT Report", "zh": "異常 LOT 報表"},
     "period_type": {"ja": "期間タイプ", "en": "Period Type", "zh": "期間類型"},
+    "period_header": {"ja": "期間", "en": "Period", "zh": "期間"},
+    "count_label": {"ja": "件数", "en": "Count", "zh": "筆數"},
+    "rate_label": {"ja": "出勤率(%)", "en": "Attendance Rate (%)", "zh": "出勤率(%)"},
+    "debug_label": {"ja": "デバッグ", "en": "DEBUG", "zh": "DEBUG"},
+    "dbg_reset_att": {"ja": "出勤行をリセット", "en": "Reset attendance rows", "zh": "重置出勤列"},
+    "dbg_select_att": {"ja": "選択出勤: {id}", "en": "Selected attendance: {id}", "zh": "選取出勤列: {id}"},
+    "dbg_btn_edit": {"ja": "ボタン編集: {id}", "en": "Edit via button: {id}", "zh": "按鈕編輯: {id}"},
+    "dbg_dbl_edit": {"ja": "ダブルクリック編集: {id}", "en": "Edit via double click: {id}", "zh": "雙擊編輯: {id}"},
+    "dbg_update_att": {"ja": "更新: {id}", "en": "Updated: {id}", "zh": "更新出勤: {id}"},
+    "dbg_no_select": {"ja": "編集対象が未選択", "en": "No row selected", "zh": "未選取任何列"},
+    "err_select_row": {"ja": "編集する行を選択してください。", "en": "Please select a row to edit.", "zh": "請先選擇要編輯的列。"},
     "start_date": {"ja": "開始日 YYYY-MM-DD", "en": "Start Date YYYY-MM-DD", "zh": "起始日 YYYY-MM-DD"},
     "end_date": {"ja": "終了日 YYYY-MM-DD", "en": "End Date YYYY-MM-DD", "zh": "結束日 YYYY-MM-DD"},
     "search": {"ja": "検索", "en": "Search", "zh": "查詢"},
@@ -81,19 +114,25 @@ TEXTS: Dict[str, Dict[str, str]] = {
     "update": {"ja": "更新", "en": "Update", "zh": "修改"},
     "delete": {"ja": "削除", "en": "Delete", "zh": "刪除"},
     "lang_label": {"ja": "言語", "en": "Language", "zh": "語言"},
+    "actions_section": {"ja": "操作", "en": "Actions", "zh": "操作"},
+    "summary_key": {"ja": "主要設備アウトプット", "en": "Key Machine Output", "zh": "主要設備產出"},
+    "summary_issues": {"ja": "主要問題", "en": "Key Issues", "zh": "主要問題"},
+    "summary_counter": {"ja": "対策", "en": "Countermeasures", "zh": "對策"},
 }
 
 class HandoverApp(tk.Tk):
     def __init__(self) -> None:
         super().__init__()
         self.lang: str = "ja"
-        self.title(self._t("title"))
+        self.title(f"{self._t('title')} {VERSION}")
         self.geometry("1100x720")
         self.resizable(True, True)
         self.session_user: Optional[Dict[str, str]] = None
         self.shift_options: List[str] = []
         self.area_options: List[str] = []
         self.current_report_id: Optional[int] = None
+        self.att_selected_id: Optional[str] = None
+        self.debug_var = tk.StringVar(value="")  # 用於畫面上顯示偵錯資訊
         init_db()
         self._load_options()
         self._build_login()
@@ -150,6 +189,7 @@ class HandoverApp(tk.Tk):
     def _build_main_ui(self) -> None:
         top_bar = ttk.Frame(self)
         top_bar.pack(fill="x")
+        ttk.Label(top_bar, text=f"版本：{VERSION}").pack(side="left", padx=10, pady=5)
         ttk.Label(top_bar, text=f"{self._t('user')}：{self.session_user['username']}（{self.session_user['role']}）").pack(side="left", padx=10, pady=5)
         ttk.Button(top_bar, text=self._t("logout"), command=self._logout).pack(side="right", padx=10)
         lang_frame = ttk.Frame(top_bar)
@@ -159,6 +199,13 @@ class HandoverApp(tk.Tk):
         lang_combo = ttk.Combobox(lang_frame, textvariable=self.lang_var, values=list(LANGS.keys()), state="readonly", width=8)
         lang_combo.pack(side="left")
         lang_combo.bind("<<ComboboxSelected>>", self._switch_language)
+
+        # Debug 信息顯示
+        debug_frame = ttk.Frame(self)
+        debug_frame.pack(fill="x")
+        ttk.Label(debug_frame, text=f"{self._t('debug_label')}:").pack(side="left", padx=5)
+        self.debug_label = ttk.Label(debug_frame, textvariable=self.debug_var, foreground="blue")
+        self.debug_label.pack(side="left", padx=5, pady=2)
 
         self.notebook = ttk.Notebook(self)
         self.notebook.pack(fill="both", expand=True)
@@ -221,13 +268,21 @@ class HandoverApp(tk.Tk):
 
     def _switch_language(self, *_: object) -> None:
         self.lang = self.lang_var.get()
-        self.title(self._t("title"))
+        self.title(f"{self._t('title')} {VERSION}")
         for widget in self.winfo_children():
             widget.destroy()
         if self.session_user:
             self._build_main_ui()
         else:
             self._build_login()
+
+    def _log_debug(self, key: str, **kwargs: str) -> None:
+        """在畫面上更新偵錯資訊。"""
+        tpl = self._t(key)
+        try:
+            self.debug_var.set(tpl.format(**kwargs))
+        except Exception:
+            self.debug_var.set(tpl)
 
     # ================= 報表：出勤 =================
     def _build_attendance_report_tab(self) -> None:
@@ -248,16 +303,23 @@ class HandoverApp(tk.Tk):
         ttk.Button(control, text=self._t("search"), command=self._load_attendance_report).grid(row=0, column=6, padx=5, pady=5)
         ttk.Button(control, text=self._t("export_csv"), command=self._export_attendance_csv).grid(row=0, column=7, padx=5, pady=5)
 
-        self.att_tree = ttk.Treeview(
+        self.att_report_tree = ttk.Treeview(
             self.att_tab,
             columns=("period", "scheduled", "present", "absent", "rate"),
             show="headings",
             height=12,
         )
-        for col, text in zip(self.att_tree["columns"], ["期間", "應出勤", "實際出勤", "缺勤", "出勤率(%)"]):
-            self.att_tree.heading(col, text=text)
-            self.att_tree.column(col, width=140)
-        self.att_tree.pack(fill="both", expand=True, padx=10, pady=5)
+        att_headers = [
+            self._t("period_header"),
+            self._t("att_scheduled"),
+            self._t("att_present"),
+            self._t("att_absent"),
+            self._t("rate_label"),
+        ]
+        for col, text in zip(self.att_report_tree["columns"], att_headers):
+            self.att_report_tree.heading(col, text=text)
+            self.att_report_tree.column(col, width=140)
+        self.att_report_tree.pack(fill="both", expand=True, padx=10, pady=5)
 
         self.att_chart_frame = ttk.LabelFrame(self.att_tab, text="出勤率趨勢")
         self.att_chart_frame.pack(fill="both", expand=True, padx=10, pady=5)
@@ -299,7 +361,7 @@ class HandoverApp(tk.Tk):
                 }
             )
         if not data:
-            self._clear_tree(self.att_tree)
+            self._clear_tree(self.att_report_tree)
             messagebox.showinfo(self._t("success"), self._t("empty_data"))
             return
 
@@ -325,9 +387,9 @@ class HandoverApp(tk.Tk):
 
         grouped["rate"] = grouped.apply(lambda r: "" if r["scheduled"] == 0 else round(r["present"] * 100 / r["scheduled"], 1), axis=1)
 
-        self._clear_tree(self.att_tree)
+        self._clear_tree(self.att_report_tree)
         for _, r in grouped.iterrows():
-            self.att_tree.insert("", "end", values=(r["period"], r["scheduled"], r["present"], r["absent"], r["rate"]))
+            self.att_report_tree.insert("", "end", values=(r["period"], r["scheduled"], r["present"], r["absent"], r["rate"]))
 
         # Chart
         fig, ax = plt.subplots(figsize=(7, 3))
@@ -340,7 +402,7 @@ class HandoverApp(tk.Tk):
         self._embed_chart(self.att_chart_frame, "att_chart_canvas", fig)
 
     def _export_attendance_csv(self) -> None:
-        rows = [self.att_tree.item(i, "values") for i in self.att_tree.get_children()]
+        rows = [self.att_report_tree.item(i, "values") for i in self.att_report_tree.get_children()]
         if not rows:
             messagebox.showinfo(self._t("success"), "沒有資料可匯出")
             return
@@ -381,7 +443,15 @@ class HandoverApp(tk.Tk):
             show="headings",
             height=8,
         )
-        for col, text in zip(self.equip_tree_detail["columns"], ["日期", "區域", "設備", "異常內容", "影響數量", "對應內容"]):
+        equip_headers = [
+            self._t("date_label"),
+            self._t("area_label"),
+            self._t("equip_id"),
+            self._t("equip_desc"),
+            self._t("equip_impact"),
+            self._t("equip_action"),
+        ]
+        for col, text in zip(self.equip_tree_detail["columns"], equip_headers):
             self.equip_tree_detail.heading(col, text=text)
             self.equip_tree_detail.column(col, width=140)
         self.equip_tree_detail.pack(fill="both", expand=True, padx=10, pady=5)
@@ -394,7 +464,7 @@ class HandoverApp(tk.Tk):
             show="headings",
             height=6,
         )
-        for col, text in zip(self.equip_tree_agg["columns"], ["期間", "筆數"]):
+        for col, text in zip(self.equip_tree_agg["columns"], [self._t("period_header"), self._t("count_label")]):
             self.equip_tree_agg.heading(col, text=text)
             self.equip_tree_agg.column(col, width=150)
         self.equip_tree_agg.pack(side="left", fill="both", expand=True, padx=5, pady=5)
@@ -520,7 +590,15 @@ class HandoverApp(tk.Tk):
             show="headings",
             height=8,
         )
-        for col, text in zip(self.lot_tree_detail["columns"], ["日期", "區域", "批號", "異常內容", "處置狀況", "特記事項"]):
+        lot_headers = [
+            self._t("date_label"),
+            self._t("area_label"),
+            self._t("lot_id_col"),
+            self._t("lot_desc"),
+            self._t("lot_status"),
+            self._t("lot_notes"),
+        ]
+        for col, text in zip(self.lot_tree_detail["columns"], lot_headers):
             self.lot_tree_detail.heading(col, text=text)
             self.lot_tree_detail.column(col, width=140)
         self.lot_tree_detail.pack(fill="both", expand=True, padx=10, pady=5)
@@ -533,7 +611,7 @@ class HandoverApp(tk.Tk):
             show="headings",
             height=6,
         )
-        for col, text in zip(self.lot_tree_agg["columns"], ["期間", "筆數"]):
+        for col, text in zip(self.lot_tree_agg["columns"], [self._t("period_header"), self._t("count_label")]):
             self.lot_tree_agg.heading(col, text=text)
             self.lot_tree_agg.column(col, width=150)
         self.lot_tree_agg.pack(side="left", fill="both", expand=True, padx=5, pady=5)
@@ -637,7 +715,19 @@ class HandoverApp(tk.Tk):
 
     # Daily tab
     def _build_daily_tab(self) -> None:
-        info_frame = ttk.LabelFrame(self.daily_frame, text=self._t("base_info"))
+        # 可捲動容器，避免小螢幕時按鈕被擠出畫面
+        container = ttk.Frame(self.daily_frame)
+        container.pack(fill="both", expand=True)
+        canvas = tk.Canvas(container)
+        vbar = ttk.Scrollbar(container, orient="vertical", command=canvas.yview)
+        self.daily_scroll = ttk.Frame(canvas)
+        self.daily_scroll.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        canvas.create_window((0, 0), window=self.daily_scroll, anchor="nw")
+        canvas.configure(yscrollcommand=vbar.set)
+        canvas.pack(side="left", fill="both", expand=True)
+        vbar.pack(side="right", fill="y")
+
+        info_frame = ttk.LabelFrame(self.daily_scroll, text=self._t("base_info"))
         info_frame.pack(fill="x", padx=10, pady=5)
 
         self.date_var = tk.StringVar(value=str(date.today()))
@@ -654,23 +744,41 @@ class HandoverApp(tk.Tk):
         self.area_combo.grid(row=0, column=5, padx=5, pady=5)
 
         # Attendance
-        att_frame = ttk.LabelFrame(self.daily_frame, text=self._t("attendance"))
+        att_frame = ttk.LabelFrame(self.daily_scroll, text=self._t("attendance"))
         att_frame.pack(fill="x", padx=10, pady=5)
-        self.att_tree = ttk.Treeview(att_frame, columns=("category", "scheduled", "present", "absent", "reason"), show="headings", height=3)
-        for col, text in zip(self.att_tree["columns"], ["分類", "定員", "出勤", "欠勤", "理由"]):
-            self.att_tree.heading(col, text=text)
-            self.att_tree.column(col, width=100)
-        self.att_tree.pack(side="left", fill="x", expand=True, padx=5, pady=5)
-        att_scroll = ttk.Scrollbar(att_frame, orient="vertical", command=self.att_tree.yview)
-        self.att_tree.configure(yscroll=att_scroll.set)
+        self.att_tree_daily = ttk.Treeview(
+            att_frame,
+            columns=("category", "scheduled", "present", "absent", "reason"),
+            show="headings",
+            height=3,
+            selectmode="browse",
+        )
+        att_headers = [
+            self._t("att_category"),
+            self._t("att_scheduled"),
+            self._t("att_present"),
+            self._t("att_absent"),
+            self._t("att_reason"),
+        ]
+        for col, text in zip(self.att_tree_daily["columns"], att_headers):
+            self.att_tree_daily.heading(col, text=text)
+            self.att_tree_daily.column(col, width=100)
+        self.att_tree_daily.pack(side="left", fill="x", expand=True, padx=5, pady=5)
+        att_scroll = ttk.Scrollbar(att_frame, orient="vertical", command=self.att_tree_daily.yview)
+        self.att_tree_daily.configure(yscroll=att_scroll.set)
         att_scroll.pack(side="right", fill="y")
-        self.att_tree.bind("<Double-1>", self._edit_attendance_row)
+        self.att_tree_daily.bind("<Double-1>", self._edit_attendance_row)
+        self.att_tree_daily.bind("<<TreeviewSelect>>", self._on_att_select)
 
         # Prepopulate
         self._reset_attendance_default()
 
+        att_btns = ttk.Frame(att_frame)
+        att_btns.pack(side="right", padx=5, pady=5)
+        ttk.Button(att_btns, text="編輯", command=self._edit_selected_attendance).pack(fill="x", pady=2)
+
         # Equipment logs
-        equip_frame = ttk.LabelFrame(self.daily_frame, text=self._t("equipment"))
+        equip_frame = ttk.LabelFrame(self.daily_scroll, text=self._t("equipment"))
         equip_frame.pack(fill="x", padx=10, pady=5)
         self.equip_tree = ttk.Treeview(
             equip_frame,
@@ -678,10 +786,15 @@ class HandoverApp(tk.Tk):
             show="headings",
             height=4,
         )
-        for col, text in zip(
-            self.equip_tree["columns"],
-            ["設備番号", "異常內容", "發生時刻", "影響數量", "對應內容", "圖片路徑"],
-        ):
+        equip_headers = [
+            self._t("equip_id"),
+            self._t("equip_desc"),
+            self._t("equip_start"),
+            self._t("equip_impact"),
+            self._t("equip_action"),
+            self._t("equip_image"),
+        ]
+        for col, text in zip(self.equip_tree["columns"], equip_headers):
             self.equip_tree.heading(col, text=text)
             self.equip_tree.column(col, width=120)
         self.equip_tree.pack(side="left", fill="x", expand=True, padx=5, pady=5)
@@ -689,7 +802,7 @@ class HandoverApp(tk.Tk):
         ttk.Button(equip_frame, text=self._t("add"), command=self._add_equipment_dialog).pack(side="right", padx=5, pady=5)
 
         # Lot logs
-        lot_frame = ttk.LabelFrame(self.daily_frame, text=self._t("lot"))
+        lot_frame = ttk.LabelFrame(self.daily_scroll, text=self._t("lot"))
         lot_frame.pack(fill="x", padx=10, pady=5)
         self.lot_tree = ttk.Treeview(
             lot_frame,
@@ -697,7 +810,13 @@ class HandoverApp(tk.Tk):
             show="headings",
             height=4,
         )
-        for col, text in zip(self.lot_tree["columns"], ["批號", "異常內容", "處置狀況", "特記事項"]):
+        lot_headers = [
+            self._t("lot_id_col"),
+            self._t("lot_desc"),
+            self._t("lot_status"),
+            self._t("lot_notes"),
+        ]
+        for col, text in zip(self.lot_tree["columns"], lot_headers):
             self.lot_tree.heading(col, text=text)
             self.lot_tree.column(col, width=150)
         self.lot_tree.pack(side="left", fill="x", expand=True, padx=5, pady=5)
@@ -705,26 +824,34 @@ class HandoverApp(tk.Tk):
         ttk.Button(lot_frame, text=self._t("add"), command=self._add_lot_dialog).pack(side="right", padx=5, pady=5)
 
         # Summary
-        summary_frame = ttk.LabelFrame(self.daily_frame, text=self._t("summary"))
+        summary_frame = ttk.LabelFrame(self.daily_scroll, text=self._t("summary"))
         summary_frame.pack(fill="x", padx=10, pady=5)
         self.summary_key = tk.Text(summary_frame, height=4)
         self.summary_issues = tk.Text(summary_frame, height=4)
         self.summary_counter = tk.Text(summary_frame, height=4)
-        ttk.Label(summary_frame, text="Key Machine Output").grid(row=0, column=0, sticky="w")
-        ttk.Label(summary_frame, text="Key Issues").grid(row=0, column=1, sticky="w")
-        ttk.Label(summary_frame, text="Countermeasures").grid(row=0, column=2, sticky="w")
+        ttk.Label(summary_frame, text=self._t("summary_key")).grid(row=0, column=0, sticky="w")
+        ttk.Label(summary_frame, text=self._t("summary_issues")).grid(row=0, column=1, sticky="w")
+        ttk.Label(summary_frame, text=self._t("summary_counter")).grid(row=0, column=2, sticky="w")
         self.summary_key.grid(row=1, column=0, padx=5, pady=5, sticky="nsew")
         self.summary_issues.grid(row=1, column=1, padx=5, pady=5, sticky="nsew")
         self.summary_counter.grid(row=1, column=2, padx=5, pady=5, sticky="nsew")
         for i in range(3):
             summary_frame.columnconfigure(i, weight=1)
 
-        # Actions
-        action_frame = ttk.Frame(self.daily_frame)
+        # Actions (固定在畫面底部，便於找到)
+        action_frame = ttk.LabelFrame(self.daily_scroll, text=self._t("actions_section"))
         action_frame.pack(fill="x", padx=10, pady=10)
-        ttk.Button(action_frame, text=self._t("load_existing"), command=self._load_existing_report).pack(side="left", padx=5)
-        ttk.Button(action_frame, text=self._t("import_excel"), command=self._import_placeholder).pack(side="left", padx=5)
-        ttk.Button(action_frame, text=self._t("submit"), command=self._save_report).pack(side="right", padx=5)
+        buttons = [
+            (self._t("load_existing"), self._load_existing_report),
+            (self._t("import_excel"), self._import_placeholder),
+            (self._t("clear_form"), self._clear_form),
+            (self._t("confirm_upload"), self._save_report),
+        ]
+        for idx, (label, handler) in enumerate(buttons):
+            btn = ttk.Button(action_frame, text=label, command=handler)
+            btn.grid(row=0, column=idx, padx=8, pady=6, sticky="w")
+        for i in range(len(buttons)):
+            action_frame.columnconfigure(i, weight=1)
 
     def _import_placeholder(self) -> None:
         messagebox.showinfo("匯入", "匯入功能將依指定格式完成後提供。")
@@ -743,6 +870,7 @@ class HandoverApp(tk.Tk):
         self.summary_key.delete("1.0", tk.END)
         self.summary_issues.delete("1.0", tk.END)
         self.summary_counter.delete("1.0", tk.END)
+        self.att_selected_id = None
 
     def _load_existing_report(self) -> None:
         """Load report by date+shift+area if exists."""
@@ -779,10 +907,10 @@ class HandoverApp(tk.Tk):
 
                 atts = db.query(AttendanceEntry).filter(AttendanceEntry.report_id == report.id).all()
                 if atts:
-                    for item in self.att_tree.get_children():
-                        self.att_tree.delete(item)
-                    for a in atts:
-                        self.att_tree.insert("", "end", values=(a.category, a.scheduled_count, a.present_count, a.absent_count, a.reason))
+                    for item in self.att_tree_daily.get_children():
+                        self.att_tree_daily.delete(item)
+                for a in atts:
+                    self.att_tree_daily.insert("", "end", values=(a.category, a.scheduled_count, a.present_count, a.absent_count, a.reason))
                 equips = db.query(EquipmentLog).filter(EquipmentLog.report_id == report.id).all()
                 for e in equips:
                     self.equip_tree.insert(
@@ -847,8 +975,8 @@ class HandoverApp(tk.Tk):
 
     def _collect_attendance(self) -> List[Dict[str, str]]:
         data = []
-        for item in self.att_tree.get_children():
-            vals = self.att_tree.item(item, "values")
+        for item in self.att_tree_daily.get_children():
+            vals = self.att_tree_daily.item(item, "values")
             data.append(
                 {
                     "category": vals[0],
@@ -861,16 +989,59 @@ class HandoverApp(tk.Tk):
         return data
 
     def _reset_attendance_default(self) -> None:
-        for item in self.att_tree.get_children():
-            self.att_tree.delete(item)
-        self.att_tree.insert("", "end", values=("正社員", 0, 0, 0, ""))
-        self.att_tree.insert("", "end", values=("契約/派遣", 0, 0, 0, ""))
+        for item in self.att_tree_daily.get_children():
+            self.att_tree_daily.delete(item)
+        self.att_tree_daily.insert("", "end", values=("正社員", 0, 0, 0, ""))
+        self.att_tree_daily.insert("", "end", values=("契約/派遣", 0, 0, 0, ""))
+        self.att_selected_id = None
+        self._log_debug("dbg_reset_att")
 
     def _edit_attendance_row(self, event: tk.Event) -> None:
-        item_id = self.att_tree.identify_row(event.y)
+        item_id = self.att_tree_daily.identify_row(event.y)
+        if item_id:
+            self.att_tree_daily.selection_set(item_id)
+            self.att_selected_id = item_id
+            self._log_debug("dbg_dbl_edit", id=item_id)
+            self._open_attendance_editor(item_id)
+
+    def _get_att_selected(self) -> Optional[str]:
+        sel = self.att_tree_daily.selection()
+        if sel:
+            return sel[0]
+        if self.att_selected_id:
+            return self.att_selected_id
+        focus = self.att_tree_daily.focus()
+        if focus:
+            return focus
+        children = self.att_tree_daily.get_children()
+        if children:
+            # auto-select first row to reduce空選擇狀況
+            self.att_tree_daily.selection_set(children[0])
+            self.att_selected_id = children[0]
+            return children[0]
+        return None
+
+    def _edit_selected_attendance(self) -> None:
+        item_id = self._get_att_selected()
+        self._log_debug("dbg_btn_edit", id=item_id or "None")
         if not item_id:
+            messagebox.showinfo(self._t("error"), self._t("err_select_row"))
+            self._log_debug("dbg_no_select")
             return
-        vals = self.att_tree.item(item_id, "values")
+        self.att_tree_daily.selection_set(item_id)
+        self.att_selected_id = item_id
+        self._open_attendance_editor(item_id)
+
+    def _on_att_select(self, _: tk.Event) -> None:
+        sel = self.att_tree_daily.selection()
+        if sel:
+            self.att_selected_id = sel[0]
+            self._log_debug("dbg_select_att", id=self.att_selected_id)
+    def _open_attendance_editor(self, item_id: str) -> None:
+        vals = list(self.att_tree_daily.item(item_id, "values"))
+        # pad to 5 columns if needed
+        while len(vals) < 5:
+            vals.append("")
         dialog = tk.Toplevel(self)
         dialog.title("出勤編輯")
         labels = ["分類", "定員", "出勤", "欠勤", "理由"]
@@ -884,7 +1055,8 @@ class HandoverApp(tk.Tk):
 
         def confirm() -> None:
             new_vals = [e.get() for e in entries]
-            self.att_tree.item(item_id, values=new_vals)
+            self.att_tree_daily.item(item_id, values=new_vals)
+            self._log_debug("dbg_update_att", id=item_id)
             dialog.destroy()
 
         ttk.Button(dialog, text="確定", command=confirm).grid(row=5, column=0, columnspan=2, pady=10)
@@ -959,6 +1131,9 @@ class HandoverApp(tk.Tk):
 
         try:
             with SessionLocal() as db:
+                is_update = False
+                if not messagebox.askyesno(self._t("confirm_upload"), "是否確認上傳全部欄位（含總結）？"):
+                    return
                 if self.current_report_id:
                     report = db.query(DailyReport).filter(DailyReport.id == self.current_report_id).first()
                 else:
@@ -972,6 +1147,7 @@ class HandoverApp(tk.Tk):
                         .first()
                     )
                 if report:
+                    is_update = True
                     report.date = report_date
                     report.shift = self.shift_var.get()
                     report.area = self.area_var.get()
@@ -1032,7 +1208,7 @@ class HandoverApp(tk.Tk):
 
                 db.commit()
                 self.current_report_id = report.id
-            messagebox.showinfo(self._t("success"), self._t("submit_ok"))
+            messagebox.showinfo(self._t("success"), self._t("submit_updated") if is_update else self._t("submit_ok"))
         except Exception as exc:
             messagebox.showerror(self._t("error"), f"提交失敗：{exc}")
 
