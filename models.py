@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, date
-from typing import Generator
+from typing import Generator, Optional
 
 from sqlalchemy import Column, Integer, String, Date, DateTime, Text, ForeignKey, create_engine
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker, Session
@@ -26,6 +26,20 @@ class User(Base):
     role: str = Column(String(20), nullable=False, default="user")
 
     reports = relationship("DailyReport", back_populates="author")
+
+
+class ShiftOption(Base):
+    __tablename__ = "shift_options"
+
+    id: int = Column(Integer, primary_key=True, index=True)
+    name: str = Column(String(50), unique=True, nullable=False)
+
+
+class AreaOption(Base):
+    __tablename__ = "area_options"
+
+    id: int = Column(Integer, primary_key=True, index=True)
+    name: str = Column(String(50), unique=True, nullable=False)
 
 
 class DailyReport(Base):
@@ -117,6 +131,17 @@ def init_db(default_admin_username: str = "admin", default_admin_password: str =
                     role="admin",
                 )
                 session.add(admin)
-                session.commit()
+            if session.query(ShiftOption).count() == 0:
+                session.add_all([ShiftOption(name="Day"), ShiftOption(name="Night")])
+            if session.query(AreaOption).count() == 0:
+                session.add_all(
+                    [
+                        AreaOption(name="etching_D"),
+                        AreaOption(name="etching_E"),
+                        AreaOption(name="litho"),
+                        AreaOption(name="thin_film"),
+                    ]
+                )
+            session.commit()
     except Exception as exc:
         print(f"建立預設管理員失敗: {exc}")
