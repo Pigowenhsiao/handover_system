@@ -28,7 +28,7 @@ from models import (
 )
 
 # 版本資訊
-VERSION = "v0.3.1-桌面多語"
+VERSION = "v0.3.2-桌面多語"
 
 # 語言資源
 LANGS = {"ja": "日本語", "en": "English", "zh": "繁體中文"}
