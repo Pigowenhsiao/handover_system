@@ -9,21 +9,43 @@ import pandas as pd
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 import matplotlib
-from matplotlib import rcParams
+from matplotlib import rcParams, font_manager
 
 matplotlib.use("Agg")
-# Prefer CJK-capable fonts to avoid garbled characters in charts; fallback to system sans.
-rcParams["font.family"] = "sans-serif"
-rcParams["font.sans-serif"] = [
-    "Noto Sans CJK TC",
-    "Noto Sans CJK JP",
-    "Arial Unicode MS",
-    "Microsoft YaHei",
-    "WenQuanYi Micro Hei",
-    "SimHei",
-    "sans-serif",
-]
-rcParams["axes.unicode_minus"] = False
+
+# Configure a CJK-capable font to avoid garbled characters in charts.
+def _configure_mpl_font() -> None:
+    candidates = [
+        "Noto Sans TC",
+        "Noto Sans CJK TC",
+        "Noto Sans SC",
+        "Noto Sans CJK JP",
+        "Microsoft JhengHei",
+        "Microsoft YaHei",
+        "PingFang TC",
+        "PingFang SC",
+        "SimHei",
+        "WenQuanYi Micro Hei",
+        "Arial Unicode MS",
+    ]
+    chosen = None
+    for name in candidates:
+        try:
+            if font_manager.findfont(name, fallback_to_default=False):
+                chosen = name
+                break
+        except Exception:
+            continue
+    rcParams["font.family"] = "sans-serif"
+    if chosen:
+        rcParams["font.sans-serif"] = [chosen, "DejaVu Sans", "sans-serif"]
+    else:
+        rcParams["font.sans-serif"] = ["DejaVu Sans", "sans-serif"]
+    rcParams["axes.unicode_minus"] = False
+
+
+_configure_mpl_font()
+
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
@@ -43,7 +65,7 @@ from models import (
 )
 
 # Version info
-VERSION = "v0.3.4-Desktop multi lang version"
+VERSION = "v0.3.5-Desktop multi lang version"
 
 # Language resources (restored readable text)
 LANGS = {"ja": "日本語", "en": "English", "zh": "中文"}
