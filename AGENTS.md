@@ -20,6 +20,8 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 ## Communication
 - 與使用者互動時一律使用繁體中文回覆，無論使用者使用何種語言。
 
+## 執行策略
+- 預設 approval_policy = never，所有指令免逐次核准。
 ## 執行環境（供後續協作參考）
 - sandbox_mode: danger-full-access
 - approval_policy: on-failure

@@ -20,6 +20,8 @@ from models import (
     DailyReport,
     EquipmentLog,
     LotLog,
+    DelayEntry,
+    SummaryActualEntry,
     SessionLocal,
     ShiftOption,
     AreaOption,
@@ -28,7 +30,7 @@ from models import (
 )
 
 # 版本資訊
-VERSION = "v0.3.2-桌面多語"
+VERSION = "v0.3.4-桌面多語"
 
 # 語言資源（上一版正常的可讀文字）
 LANGS = {"ja": "日本語", "en": "English", "zh": "中文"}
@@ -149,6 +151,33 @@ TEXTS: Dict[str, Dict[str, str]] = {
     "dialog_edit_shift": {"ja": "シフト編集", "en": "Edit Shift", "zh": "編輯班別"},
     "dialog_edit_area": {"ja": "エリア編集", "en": "Edit Area", "zh": "編輯區域"},
     "total": {"ja": "合計", "en": "Total", "zh": "總計"},
+    "tab_delay": {"ja": "ディレイリスト", "en": "Delay List", "zh": "延遲清單"},
+    "import_delay": {"ja": "Delay Excel取込", "en": "Import Delay Excel", "zh": "匯入延遲Excel"},
+    "delay_date": {"ja": "日付", "en": "Date", "zh": "日期"},
+    "delay_time": {"ja": "時間帯", "en": "Time", "zh": "時間"},
+    "delay_reactor": {"ja": "装置", "en": "Reactor", "zh": "設備"},
+    "delay_process": {"ja": "工程", "en": "Process", "zh": "製程"},
+    "delay_lot": {"ja": "ロット", "en": "Lot", "zh": "批號"},
+    "delay_wafer": {"ja": "ウェーハ", "en": "Wafer", "zh": "晶圓"},
+    "delay_progress": {"ja": "進行中工程", "en": "In Progress", "zh": "進行中"},
+    "delay_prev_steps": {"ja": "前工程", "en": "Previous Steps", "zh": "前站"},
+    "delay_prev_time": {"ja": "前工程時間", "en": "Prev Time", "zh": "前站時間"},
+    "delay_severity": {"ja": "重要度", "en": "Severity", "zh": "嚴重度"},
+    "delay_action": {"ja": "対処内容", "en": "Action", "zh": "對應內容"},
+    "delay_note": {"ja": "備考", "en": "Note", "zh": "備註"},
+    "tab_summary_actual": {"ja": "Summary Actual", "en": "Summary Actual", "zh": "Summary Actual"},
+    "import_summary_actual": {"ja": "Summary Actual 取込", "en": "Import Summary Actual", "zh": "匯入 Summary Actual"},
+    "summary_label": {"ja": "ラベル", "en": "Label", "zh": "標籤"},
+    "summary_plan": {"ja": "Plan", "en": "Plan", "zh": "Plan"},
+    "summary_completed": {"ja": "Completed", "en": "Completed", "zh": "Completed"},
+    "summary_in_process": {"ja": "In Process", "en": "In Process", "zh": "In Process"},
+    "summary_on_track": {"ja": "On Track", "en": "On Track", "zh": "On Track"},
+    "summary_at_risk": {"ja": "At Risk", "en": "At Risk", "zh": "At Risk"},
+    "summary_delayed": {"ja": "Delayed", "en": "Delayed", "zh": "Delayed"},
+    "summary_no_data": {"ja": "No Data", "en": "No Data", "zh": "No Data"},
+    "summary_scrapped": {"ja": "Scrapped", "en": "Scrapped", "zh": "Scrapped"},
+    "filter_date": {"ja": "日付フィルタ", "en": "Date Filter", "zh": "日期篩選"},
+    "clear_reports": {"ja": "レポート表示をクリア", "en": "Clear Reports", "zh": "清除報表畫面"},
 }
 
 
@@ -166,6 +195,8 @@ class HandoverApp(tk.Tk):
         self.current_report_id: Optional[int] = None
         self.att_selected_id: Optional[str] = None
         self.debug_var = tk.StringVar(value="")  # 用於畫面上顯示偵錯資訊
+        self.delay_pending_records: List[Dict[str, str]] = []
+        self.summary_pending_records: List[Dict[str, str]] = []
         init_db()
         self._load_options()
         self._build_login()
@@ -280,6 +311,30 @@ class HandoverApp(tk.Tk):
         for item in tree.get_children():
             tree.delete(item)
 
+    def _clear_reports_view(self, target: Optional[str] = None) -> None:
+        """Clear report tables; target 可指定 att/equip/lot/delay/summary/all."""
+        if target in (None, "all", "delay"):
+            self.delay_pending_records = []
+        if target in (None, "all", "summary"):
+            self.summary_pending_records = []
+        if target in (None, "all", "att"):
+            if hasattr(self, "att_report_tree"):
+                self._clear_tree(self.att_report_tree)
+        if target in (None, "all", "equip"):
+            for attr in ["equip_tree_detail", "equip_tree_agg"]:
+                if hasattr(self, attr):
+                    self._clear_tree(getattr(self, attr))
+        if target in (None, "all", "lot"):
+            for attr in ["lot_tree_detail", "lot_tree_agg"]:
+                if hasattr(self, attr):
+                    self._clear_tree(getattr(self, attr))
+        if target in (None, "all", "delay"):
+            if hasattr(self, "delay_tree"):
+                self._clear_tree(self.delay_tree)
+        if target in (None, "all", "summary"):
+            if hasattr(self, "summary_tree"):
+                self._clear_tree(self.summary_tree)
+
     def _embed_chart(self, frame: ttk.Frame, fig_attr: str, fig: plt.Figure) -> None:
         # Destroy previous canvas if exists
         old = getattr(self, fig_attr, None)
@@ -380,6 +435,9 @@ class HandoverApp(tk.Tk):
         ttk.Entry(control, textvariable=self.att_end_var, width=12).grid(row=0, column=5, padx=5, pady=5)
         ttk.Button(control, text=self._t("search"), command=self._load_attendance_report).grid(row=0, column=6, padx=5, pady=5)
         ttk.Button(control, text=self._t("export_csv"), command=self._export_attendance_csv).grid(row=0, column=7, padx=5, pady=5)
+        ttk.Button(control, text=self._t("clear_reports"), command=lambda: self._clear_reports_view("att")).grid(
+            row=0, column=8, padx=5, pady=5
+        )
 
         self.att_report_tree = ttk.Treeview(
             self.att_tab,
@@ -551,6 +609,9 @@ class HandoverApp(tk.Tk):
         ttk.Entry(control, textvariable=self.equip_end_var, width=12).grid(row=0, column=5, padx=5, pady=5)
         ttk.Button(control, text=self._t("search"), command=self._load_equipment_report).grid(row=0, column=6, padx=5, pady=5)
         ttk.Button(control, text=self._t("export_csv"), command=self._export_equipment_csv).grid(row=0, column=7, padx=5, pady=5)
+        ttk.Button(control, text=self._t("clear_reports"), command=lambda: self._clear_reports_view("equip")).grid(
+            row=0, column=8, padx=5, pady=5
+        )
 
         self.equip_tree_detail = ttk.Treeview(
             self.equip_tab,
@@ -715,6 +776,9 @@ class HandoverApp(tk.Tk):
         ttk.Entry(control, textvariable=self.lot_end_var, width=12).grid(row=0, column=5, padx=5, pady=5)
         ttk.Button(control, text=self._t("search"), command=self._load_lot_report).grid(row=0, column=6, padx=5, pady=5)
         ttk.Button(control, text=self._t("export_csv"), command=self._export_lot_csv).grid(row=0, column=7, padx=5, pady=5)
+        ttk.Button(control, text=self._t("clear_reports"), command=lambda: self._clear_reports_view("lot")).grid(
+            row=0, column=8, padx=5, pady=5
+        )
 
         self.lot_tree_detail = ttk.Treeview(
             self.lot_tab,
@@ -758,6 +822,707 @@ class HandoverApp(tk.Tk):
         self.lot_chart_frame = ttk.LabelFrame(self.lot_tab, text=self._t("lot_chart_title"))
         self.lot_chart_frame.pack(fill="both", expand=True, padx=10, pady=5)
 
+    # ================= 報表：Delay List =================
+    def _build_delay_tab(self) -> None:
+        btn_frame = ttk.Frame(self.delay_tab)
+        btn_frame.pack(fill="x", padx=10, pady=5)
+        ttk.Button(btn_frame, text=self._t("import_delay"), command=self._import_delay_excel).pack(side="left", padx=5)
+        ttk.Button(btn_frame, text=self._t("confirm_upload"), command=self._upload_delay_pending).pack(side="left", padx=5)
+        ttk.Button(btn_frame, text=self._t("refresh"), command=self._load_delay_entries).pack(side="left", padx=5)
+
+        filter_frame = ttk.Frame(self.delay_tab)
+        filter_frame.pack(fill="x", padx=10, pady=5)
+        ttk.Label(filter_frame, text=self._t("start_date")).grid(row=0, column=0, padx=4, pady=4, sticky="e")
+        self.delay_start_var = tk.StringVar()
+        ttk.Entry(filter_frame, textvariable=self.delay_start_var, width=12).grid(row=0, column=1, padx=4, pady=4)
+        ttk.Label(filter_frame, text=self._t("end_date")).grid(row=0, column=2, padx=4, pady=4, sticky="e")
+        self.delay_end_var = tk.StringVar()
+        ttk.Entry(filter_frame, textvariable=self.delay_end_var, width=12).grid(row=0, column=3, padx=4, pady=4)
+        ttk.Button(filter_frame, text=self._t("search"), command=self._load_delay_entries).grid(row=0, column=4, padx=6, pady=4)
+        ttk.Button(filter_frame, text=self._t("clear_reports"), command=lambda: self._clear_reports_view("delay")).grid(
+            row=0, column=5, padx=6, pady=4
+        )
+
+        cols = (
+            "id",
+            "date",
+            "time",
+            "reactor",
+            "process",
+            "lot",
+            "wafer",
+            "progress",
+            "prev_steps",
+            "prev_time",
+            "severity",
+            "action",
+            "note",
+        )
+        headers = [
+            "ID",
+            self._t("delay_date"),
+            self._t("delay_time"),
+            self._t("delay_reactor"),
+            self._t("delay_process"),
+            self._t("delay_lot"),
+            self._t("delay_wafer"),
+            self._t("delay_progress"),
+            self._t("delay_prev_steps"),
+            self._t("delay_prev_time"),
+            self._t("delay_severity"),
+            self._t("delay_action"),
+            self._t("delay_note"),
+        ]
+        self.delay_tree = ttk.Treeview(self.delay_tab, columns=cols, show="headings", height=18)
+        for col, header in zip(cols, headers):
+            self.delay_tree.heading(col, text=header)
+            width = 50 if col == "id" else 110
+            stretch = False if col == "id" else True
+            anchor = "center" if col != "note" and col != "action" and col != "progress" else "w"
+            self.delay_tree.column(col, width=width, stretch=stretch, anchor=anchor)
+        self.delay_tree.pack(fill="both", expand=True, padx=10, pady=5)
+        self.delay_tree.bind("<Double-1>", lambda e: self._edit_delay_dialog())
+        ttk.Scrollbar(self.delay_tab, orient="vertical", command=self.delay_tree.yview).pack(side="right", fill="y")
+        self.delay_tree.configure(yscrollcommand=self.delay_tree.yview)
+        self._load_delay_entries()
+
+    def _render_delay_rows(self, rows: List[Dict[str, str]], pending: bool = False) -> None:
+        self._clear_tree(self.delay_tree)
+        for idx, r in enumerate(rows):
+            if pending:
+                row_id = f"P{idx}"
+                values = (
+                    row_id,
+                    r["delay_date"],
+                    r["time_range"],
+                    r["reactor"],
+                    r["process"],
+                    r["lot"],
+                    r["wafer"],
+                    r["progress"],
+                    r["prev_steps"],
+                    r["prev_time"],
+                    r["severity"],
+                    r["action"],
+                    r["note"],
+                )
+            else:
+                row_id = r.id
+                values = (
+                    r.id,
+                    r.delay_date,
+                    r.time_range,
+                    r.reactor,
+                    r.process,
+                    r.lot,
+                    r.wafer,
+                    r.progress,
+                    r.prev_steps,
+                    r.prev_time,
+                    r.severity,
+                    r.action,
+                    r.note,
+                )
+            self.delay_tree.insert("", "end", values=values)
+
+    def _load_delay_entries(self) -> None:
+        if self.delay_pending_records:
+            self._render_delay_rows(self.delay_pending_records, pending=True)
+            return
+        start = self.delay_start_var.get().strip()
+        end = self.delay_end_var.get().strip()
+        start_date = end_date = None
+        try:
+            if start:
+                start_date = datetime.strptime(start, "%Y-%m-%d").date()
+            if end:
+                end_date = datetime.strptime(end, "%Y-%m-%d").date()
+        except ValueError:
+            messagebox.showerror(self._t("error"), self._t("date_format_invalid"))
+            return
+        try:
+            with SessionLocal() as db:
+                query = db.query(DelayEntry)
+                if start_date:
+                    query = query.filter(DelayEntry.delay_date >= start_date)
+                if end_date:
+                    query = query.filter(DelayEntry.delay_date <= end_date)
+                rows = query.order_by(DelayEntry.delay_date.desc(), DelayEntry.imported_at.desc()).all()
+        except Exception as exc:
+            messagebox.showerror(self._t("error"), f"{exc}")
+            return
+        self._render_delay_rows(rows, pending=False)
+
+    def _import_delay_excel(self) -> None:
+        path = filedialog.askopenfilename(
+            initialdir=r"Z:\\☆Junior Supervisor日報\\Delay_List",
+            title=self._t("import_delay"),
+            filetypes=[("Excel Files", "*.xlsx;*.xls")],
+        )
+        if not path:
+            return
+        try:
+            xls = pd.ExcelFile(path)
+            sheet_name = xls.sheet_names[0]
+            if len(xls.sheet_names) > 1:
+                picker = tk.Toplevel(self)
+                picker.title(self._t("tab_delay"))
+                ttk.Label(picker, text="Select sheet").pack(padx=10, pady=5)
+                sheet_var = tk.StringVar(value=xls.sheet_names[0])
+                combo = ttk.Combobox(picker, textvariable=sheet_var, values=xls.sheet_names, state="readonly")
+                combo.pack(padx=10, pady=5)
+                chosen = {"name": sheet_name}
+
+                def confirm():
+                    chosen["name"] = sheet_var.get()
+                    picker.destroy()
+
+                ttk.Button(picker, text="OK", command=confirm).pack(pady=8)
+                picker.grab_set()
+                picker.wait_window()
+                sheet_name = chosen["name"]
+
+            df = pd.read_excel(xls, sheet_name=sheet_name, header=1)
+        except Exception as exc:
+            messagebox.showerror(self._t("error"), f"{exc}")
+            return
+
+        def find_col(match: str) -> Optional[str]:
+            for col in df.columns:
+                c = str(col).lower()
+                if match in c:
+                    return col
+            return None
+
+        col_map = {
+            "date": find_col("date"),
+            "time": find_col("time"),
+            "reactor": find_col("reactor"),
+            "process": find_col("process"),
+            "lot": find_col("lot"),
+            "wafer": find_col("wafer"),
+            "progress": find_col("progress"),
+            "prev_steps": find_col("previous"),
+            "prev_time": find_col("prev"),
+            "severity": find_col("severity") or find_col("caution"),
+            "action": find_col("action") or find_col("対処"),
+            "note": find_col("note") or find_col("備考"),
+        }
+
+        records: List[Dict[str, str]] = []
+        for _, row in df.iterrows():
+            # 取檔案日期
+            raw_date = row.get(col_map["date"]) if col_map["date"] else None
+            parsed_date = pd.to_datetime(raw_date, errors="coerce").date() if pd.notna(raw_date) else None
+            if not parsed_date:
+                continue
+            def sval(key: str) -> str:
+                col = col_map.get(key)
+                if col is None:
+                    return ""
+                val = row.get(col)
+                if pd.isna(val):
+                    return ""
+                return str(val).strip()
+
+            records.append(
+                {
+                    "delay_date": parsed_date,
+                    "time_range": sval("time"),
+                    "reactor": sval("reactor"),
+                    "process": sval("process"),
+                    "lot": sval("lot"),
+                    "wafer": sval("wafer"),
+                    "progress": sval("progress"),
+                    "prev_steps": sval("prev_steps"),
+                    "prev_time": sval("prev_time"),
+                    "severity": sval("severity"),
+                    "action": sval("action"),
+                    "note": sval("note"),
+                }
+            )
+
+        if not records:
+            messagebox.showinfo(self._t("info"), self._t("empty_data"))
+            return
+
+        self.delay_pending_records = records
+        self._render_delay_rows(records, pending=True)
+        messagebox.showinfo(self._t("info"), self._t("import_delay") + " OK，請確認後再點上傳")
+
+    def _upload_delay_pending(self) -> None:
+        if not self.delay_pending_records:
+            messagebox.showinfo(self._t("info"), self._t("empty_data"))
+            return
+        try:
+            with SessionLocal() as db:
+                unique_dates = {rec["delay_date"] for rec in self.delay_pending_records}
+                if unique_dates:
+                    db.query(DelayEntry).filter(DelayEntry.delay_date.in_(unique_dates)).delete(synchronize_session=False)
+                for rec in self.delay_pending_records:
+                    db.add(DelayEntry(**rec))
+                db.commit()
+            self.delay_pending_records = []
+            self._load_delay_entries()
+            messagebox.showinfo(self._t("success"), self._t("submit_ok"))
+        except Exception as exc:
+            messagebox.showerror(self._t("error"), f"{exc}")
+
+    # ================= 報表：Summary Actual =================
+    def _build_summary_actual_tab(self) -> None:
+        control = ttk.Frame(self.summary_actual_tab)
+        control.pack(fill="x", padx=10, pady=5)
+        ttk.Label(control, text=self._t("filter_date")).grid(row=0, column=0, padx=5, pady=5, sticky="e")
+        self.summary_start_var = tk.StringVar()
+        ttk.Entry(control, textvariable=self.summary_start_var, width=12).grid(row=0, column=1, padx=5, pady=5)
+        ttk.Label(control, text=self._t("end_date")).grid(row=0, column=2, padx=5, pady=5, sticky="e")
+        self.summary_end_var = tk.StringVar()
+        ttk.Entry(control, textvariable=self.summary_end_var, width=12).grid(row=0, column=3, padx=5, pady=5)
+        ttk.Button(control, text=self._t("search"), command=self._load_summary_actual).grid(row=0, column=4, padx=5, pady=5)
+        ttk.Button(control, text=self._t("import_summary_actual"), command=self._import_summary_actual_excel).grid(row=0, column=5, padx=5, pady=5)
+        ttk.Button(control, text=self._t("confirm_upload"), command=self._upload_summary_pending).grid(row=0, column=6, padx=5, pady=5)
+        ttk.Button(control, text=self._t("clear_reports"), command=lambda: self._clear_reports_view("summary")).grid(
+            row=0, column=7, padx=5, pady=5
+        )
+
+        cols = (
+            "id",
+            "date",
+            "label",
+            "plan",
+            "completed",
+            "in_process",
+            "on_track",
+            "at_risk",
+            "delayed",
+            "no_data",
+            "scrapped",
+        )
+        headers = [
+            "ID",
+            self._t("delay_date"),
+            self._t("summary_label"),
+            self._t("summary_plan"),
+            self._t("summary_completed"),
+            self._t("summary_in_process"),
+            self._t("summary_on_track"),
+            self._t("summary_at_risk"),
+            self._t("summary_delayed"),
+            self._t("summary_no_data"),
+            self._t("summary_scrapped"),
+        ]
+        self.summary_tree = ttk.Treeview(self.summary_actual_tab, columns=cols, show="headings", height=16)
+        for col, header in zip(cols, headers):
+            self.summary_tree.heading(col, text=header)
+            width = 50 if col == "id" else 110
+            stretch = False if col == "id" else True
+            anchor = "center" if col not in ("label",) else "w"
+            self.summary_tree.column(col, width=width, stretch=stretch, anchor=anchor)
+        self.summary_tree.pack(fill="both", expand=True, padx=10, pady=5)
+        self.summary_tree.bind(
+            "<Double-1>", lambda e: self._edit_summary_dialog()
+        )
+        ttk.Scrollbar(self.summary_actual_tab, orient="vertical", command=self.summary_tree.yview).pack(side="right", fill="y")
+        self.summary_tree.configure(yscrollcommand=self.summary_tree.yview)
+        self._load_summary_actual()
+
+    def _load_summary_actual(self) -> None:
+        self._clear_tree(self.summary_tree)
+        start = self.summary_start_var.get().strip()
+        end = self.summary_end_var.get().strip()
+        start_date = end_date = None
+        try:
+            if start:
+                start_date = datetime.strptime(start, "%Y-%m-%d").date()
+            if end:
+                end_date = datetime.strptime(end, "%Y-%m-%d").date()
+        except ValueError:
+            messagebox.showerror(self._t("error"), self._t("date_format_invalid"))
+            return
+
+        def fmt(v: int) -> str:
+            return "-" if v == 0 else str(v)
+
+        if self.summary_pending_records:
+            for idx, r in enumerate(self.summary_pending_records):
+                self.summary_tree.insert(
+                    "",
+                    "end",
+                    values=(
+                        f"P{idx}",
+                        r["summary_date"],
+                        r["label"],
+                        fmt(r["plan"]),
+                        fmt(r["completed"]),
+                        fmt(r["in_process"]),
+                        fmt(r["on_track"]),
+                        fmt(r["at_risk"]),
+                        fmt(r["delayed"]),
+                        fmt(r["no_data"]),
+                        fmt(r["scrapped"]),
+                    ),
+                )
+            return
+
+        try:
+            with SessionLocal() as db:
+                query = db.query(SummaryActualEntry)
+                if start_date:
+                    query = query.filter(SummaryActualEntry.summary_date >= start_date)
+                if end_date:
+                    query = query.filter(SummaryActualEntry.summary_date <= end_date)
+                rows = query.order_by(SummaryActualEntry.summary_date.desc(), SummaryActualEntry.imported_at.desc()).all()
+        except Exception as exc:
+            messagebox.showerror(self._t("error"), f"{exc}")
+            return
+        for r in rows:
+            self.summary_tree.insert(
+                "",
+                "end",
+                values=(
+                    r.id,
+                    r.summary_date,
+                    r.label,
+                    fmt(r.plan),
+                    fmt(r.completed),
+                    fmt(r.in_process),
+                    fmt(r.on_track),
+                    fmt(r.at_risk),
+                    fmt(r.delayed),
+                    fmt(r.no_data),
+                    fmt(r.scrapped),
+                ),
+            )
+
+    def _import_summary_actual_excel(self) -> None:
+        path = filedialog.askopenfilename(
+            title=self._t("import_summary_actual"),
+            filetypes=[("Excel Files", "*.xlsx;*.xls")],
+        )
+        if not path:
+            return
+        try:
+            # Read entire sheet without header to get date row (row index 1)
+            raw_sheet = pd.read_excel(path, sheet_name="Summary(Actual)", header=None)
+        except Exception as exc:
+            messagebox.showerror(self._t("error"), f"{exc}")
+            return
+        summary_date = None
+        if len(raw_sheet) > 1:
+            for val in raw_sheet.iloc[1].dropna().tolist():
+                parsed = pd.to_datetime(val, errors="coerce")
+                if pd.isna(parsed):
+                    continue
+                summary_date = parsed.date()
+                break
+        if not summary_date:
+            messagebox.showerror(self._t("error"), self._t("date_format_invalid"))
+            return
+
+        try:
+            df = pd.read_excel(path, sheet_name="Summary(Actual)", header=2)
+        except Exception as exc:
+            messagebox.showerror(self._t("error"), f"{exc}")
+            return
+
+        # Normalize column names
+        def norm(col: str) -> str:
+            return str(col).strip().lower().replace(" ", "").replace("_", "")
+
+        col_lookup = {norm(c): c for c in df.columns}
+
+        def get_col(key: str) -> Optional[str]:
+            return col_lookup.get(key, None)
+
+        def get_val(row, key: str) -> int:
+            col = get_col(key)
+            if col is None:
+                return 0
+            val = row.get(col)
+            if pd.isna(val):
+                return 0
+            try:
+                return int(val)
+            except Exception:
+                try:
+                    return int(float(val))
+                except Exception:
+                    return 0
+
+        records: List[Dict[str, object]] = []
+        for _, row in df.iterrows():
+            label_val = ""
+            if len(df.columns) > 2:
+                part_b = row.get(df.columns[1])
+                part_c = row.get(df.columns[2])
+                label_val = f"{'' if pd.isna(part_b) else str(part_b).strip()} {'' if pd.isna(part_c) else str(part_c).strip()}".strip()
+            if not label_val:
+                continue
+            records.append(
+                {
+                    "summary_date": summary_date,
+                    "label": label_val,
+                    "plan": get_val(row, "plan"),
+                    "completed": get_val(row, "completed"),
+                    "in_process": get_val(row, "inprocess"),
+                    "on_track": get_val(row, "ontrack"),
+                    "at_risk": get_val(row, "atrisk"),
+                    "delayed": get_val(row, "delayed"),
+                    "no_data": get_val(row, "nodata"),
+                    "scrapped": get_val(row, "scrapped"),
+                }
+            )
+
+        if not records:
+            messagebox.showinfo(self._t("info"), self._t("empty_data"))
+            return
+        self.summary_pending_records = records
+        self._load_summary_actual()
+        messagebox.showinfo(self._t("info"), self._t("import_summary_actual") + " OK，請確認後再點上傳")
+
+    def _upload_summary_pending(self) -> None:
+        if not self.summary_pending_records:
+            messagebox.showinfo(self._t("info"), self._t("empty_data"))
+            return
+        try:
+            with SessionLocal() as db:
+                unique_dates = {rec["summary_date"] for rec in self.summary_pending_records}
+                if unique_dates:
+                    db.query(SummaryActualEntry).filter(SummaryActualEntry.summary_date.in_(unique_dates)).delete(
+                        synchronize_session=False
+                    )
+                for rec in self.summary_pending_records:
+                    db.add(SummaryActualEntry(**rec))
+                db.commit()
+            self.summary_pending_records = []
+            self._load_summary_actual()
+            messagebox.showinfo(self._t("success"), self._t("submit_ok"))
+        except Exception as exc:
+            messagebox.showerror(self._t("error"), f"{exc}")
+
+    def _edit_delay_dialog(self) -> None:
+        sel = self.delay_tree.selection()
+        if not sel:
+            messagebox.showinfo(self._t("info"), self._t("err_select_row"))
+            return
+        vals = self.delay_tree.item(sel[0], "values")
+        if len(vals) < 13:
+            return
+        (
+            row_id,
+            d_date,
+            d_time,
+            reactor,
+            process,
+            lot,
+            wafer,
+            progress,
+            prev_steps,
+            prev_time,
+            severity,
+            action,
+            note,
+        ) = vals
+        is_pending = isinstance(row_id, str) and str(row_id).startswith("P")
+        if hasattr(self, "_delay_edit_win") and self._delay_edit_win and self._delay_edit_win.winfo_exists():
+            self._delay_edit_win.destroy()
+        dlg = tk.Toplevel(self)
+        self._delay_edit_win = dlg
+        dlg.title(self._t("tab_delay"))
+        fields = [
+            ("date", d_date),
+            ("time", d_time),
+            ("reactor", reactor),
+            ("process", process),
+            ("lot", lot),
+            ("wafer", wafer),
+            ("progress", progress),
+            ("prev_steps", prev_steps),
+            ("prev_time", prev_time),
+            ("severity", severity),
+            ("action", action),
+            ("note", note),
+        ]
+        vars_map = {}
+        for idx, (k, v) in enumerate(fields):
+            ttk.Label(dlg, text=k).grid(row=idx, column=0, padx=5, pady=4, sticky="e")
+            var = tk.StringVar(value=str(v))
+            ttk.Entry(dlg, textvariable=var, width=30).grid(row=idx, column=1, padx=5, pady=4, sticky="w")
+            vars_map[k] = var
+
+        def save() -> None:
+            try:
+                if is_pending:
+                    idx = int(str(row_id)[1:])
+                    if idx < 0 or idx >= len(self.delay_pending_records):
+                        messagebox.showerror(self._t("error"), self._t("err_select_row"))
+                        return
+                    try:
+                        new_date = datetime.strptime(vars_map["date"].get().strip(), "%Y-%m-%d").date()
+                    except Exception:
+                        messagebox.showerror(self._t("error"), self._t("date_format_invalid"))
+                        return
+                    rec = self.delay_pending_records[idx]
+                    rec.update(
+                        {
+                            "delay_date": new_date,
+                            "time_range": vars_map["time"].get().strip(),
+                            "reactor": vars_map["reactor"].get().strip(),
+                            "process": vars_map["process"].get().strip(),
+                            "lot": vars_map["lot"].get().strip(),
+                            "wafer": vars_map["wafer"].get().strip(),
+                            "progress": vars_map["progress"].get().strip(),
+                            "prev_steps": vars_map["prev_steps"].get().strip(),
+                            "prev_time": vars_map["prev_time"].get().strip(),
+                            "severity": vars_map["severity"].get().strip(),
+                            "action": vars_map["action"].get().strip(),
+                            "note": vars_map["note"].get().strip(),
+                        }
+                    )
+                    self._render_delay_rows(self.delay_pending_records, pending=True)
+                else:
+                    with SessionLocal() as db:
+                        row = db.query(DelayEntry).filter(DelayEntry.id == row_id).first()
+                        if not row:
+                            messagebox.showerror(self._t("error"), self._t("err_select_row"))
+                            return
+                        try:
+                            row.delay_date = datetime.strptime(vars_map["date"].get().strip(), "%Y-%m-%d").date()
+                        except Exception:
+                            messagebox.showerror(self._t("error"), self._t("date_format_invalid"))
+                            return
+                        row.time_range = vars_map["time"].get().strip()
+                        row.reactor = vars_map["reactor"].get().strip()
+                        row.process = vars_map["process"].get().strip()
+                        row.lot = vars_map["lot"].get().strip()
+                        row.wafer = vars_map["wafer"].get().strip()
+                        row.progress = vars_map["progress"].get().strip()
+                        row.prev_steps = vars_map["prev_steps"].get().strip()
+                        row.prev_time = vars_map["prev_time"].get().strip()
+                        row.severity = vars_map["severity"].get().strip()
+                        row.action = vars_map["action"].get().strip()
+                        row.note = vars_map["note"].get().strip()
+                        db.commit()
+                    self._load_delay_entries()
+                dlg.destroy()
+            except Exception as exc:
+                messagebox.showerror(self._t("error"), f"{exc}")
+
+        ttk.Button(dlg, text=self._t("save_update"), command=save).grid(row=len(fields), column=0, columnspan=2, pady=10)
+        dlg.protocol("WM_DELETE_WINDOW", lambda: (setattr(self, "_delay_edit_win", None), dlg.destroy()))
+
+    def _edit_summary_dialog(self) -> None:
+        sel = self.summary_tree.selection()
+        if not sel:
+            messagebox.showinfo(self._t("info"), self._t("err_select_row"))
+            return
+        vals = self.summary_tree.item(sel[0], "values")
+        if len(vals) < 10:
+            return
+        (
+            row_id,
+            d_date,
+            label,
+            plan,
+            completed,
+            in_process,
+            on_track,
+            at_risk,
+            delayed,
+            no_data,
+            scrapped,
+        ) = vals
+        is_pending = isinstance(row_id, str) and str(row_id).startswith("P")
+        if hasattr(self, "_summary_edit_win") and self._summary_edit_win and self._summary_edit_win.winfo_exists():
+            self._summary_edit_win.destroy()
+        dlg = tk.Toplevel(self)
+        self._summary_edit_win = dlg
+        dlg.title(self._t("tab_summary_actual"))
+
+        fields = [
+            ("date", d_date),
+            ("label", label),
+            ("plan", plan),
+            ("completed", completed),
+            ("in_process", in_process),
+            ("on_track", on_track),
+            ("at_risk", at_risk),
+            ("delayed", delayed),
+            ("no_data", no_data),
+            ("scrapped", scrapped),
+        ]
+        vars_map = {}
+        for idx, (k, v) in enumerate(fields):
+            ttk.Label(dlg, text=k).grid(row=idx, column=0, padx=5, pady=4, sticky="e")
+            var = tk.StringVar(value=str(v))
+            ttk.Entry(dlg, textvariable=var, width=30).grid(row=idx, column=1, padx=5, pady=4, sticky="w")
+            vars_map[k] = var
+
+        def save() -> None:
+            try:
+                if is_pending:
+                    idx = int(str(row_id)[1:])
+                    if idx < 0 or idx >= len(self.summary_pending_records):
+                        messagebox.showerror(self._t("error"), self._t("err_select_row"))
+                        return
+                    try:
+                        new_date = datetime.strptime(vars_map["date"].get().strip(), "%Y-%m-%d").date()
+                    except Exception:
+                        messagebox.showerror(self._t("error"), self._t("date_format_invalid"))
+                        return
+                    rec = self.summary_pending_records[idx]
+                    rec["summary_date"] = new_date
+                    rec["label"] = vars_map["label"].get().strip()
+                    for key in [
+                        "plan",
+                        "completed",
+                        "in_process",
+                        "on_track",
+                        "at_risk",
+                        "delayed",
+                        "no_data",
+                        "scrapped",
+                    ]:
+                        try:
+                            rec[key] = int(vars_map[key].get().strip() or 0)
+                        except Exception:
+                            rec[key] = 0
+                    self._load_summary_actual()
+                else:
+                    with SessionLocal() as db:
+                        row = db.query(SummaryActualEntry).filter(SummaryActualEntry.id == row_id).first()
+                        if not row:
+                            messagebox.showerror(self._t("error"), self._t("err_select_row"))
+                            return
+                        try:
+                            row.summary_date = datetime.strptime(vars_map["date"].get().strip(), "%Y-%m-%d").date()
+                        except Exception:
+                            messagebox.showerror(self._t("error"), self._t("date_format_invalid"))
+                            return
+                        row.label = vars_map["label"].get().strip()
+                        for k_attr in [
+                            ("plan", "plan"),
+                            ("completed", "completed"),
+                            ("in_process", "in_process"),
+                            ("on_track", "on_track"),
+                            ("at_risk", "at_risk"),
+                            ("delayed", "delayed"),
+                            ("no_data", "no_data"),
+                            ("scrapped", "scrapped"),
+                        ]:
+                            key, attr = k_attr
+                            try:
+                                setattr(row, attr, int(vars_map[key].get().strip() or 0))
+                            except Exception:
+                                setattr(row, attr, 0)
+                        db.commit()
+                    self._load_summary_actual()
+                dlg.destroy()
+            except Exception as exc:
+                messagebox.showerror(self._t("error"), f"{exc}")
+
+        ttk.Button(dlg, text=self._t("save_update"), command=save).grid(row=len(fields), column=0, columnspan=2, pady=10)
+        dlg.protocol("WM_DELETE_WINDOW", lambda: (setattr(self, "_summary_edit_win", None), dlg.destroy()))
     def _load_lot_report(self) -> None:
         mode = self.lot_mode_var.get()
         start_str = self.lot_start_var.get().strip()
@@ -1376,14 +2141,20 @@ class HandoverApp(tk.Tk):
         self.att_tab = ttk.Frame(self.report_notebook)
         self.equip_tab = ttk.Frame(self.report_notebook)
         self.lot_tab = ttk.Frame(self.report_notebook)
+        self.delay_tab = ttk.Frame(self.report_notebook)
+        self.summary_actual_tab = ttk.Frame(self.report_notebook)
 
         self.report_notebook.add(self.att_tab, text=self._t("report_att"))
         self.report_notebook.add(self.equip_tab, text=self._t("report_equip"))
         self.report_notebook.add(self.lot_tab, text=self._t("report_lot"))
+        self.report_notebook.add(self.delay_tab, text=self._t("tab_delay"))
+        self.report_notebook.add(self.summary_actual_tab, text=self._t("tab_summary_actual"))
 
         self._build_attendance_report_tab()
         self._build_equipment_report_tab()
         self._build_lot_report_tab()
+        self._build_delay_tab()
+        self._build_summary_actual_tab()
 
     def _load_reports(self) -> None:
         pass

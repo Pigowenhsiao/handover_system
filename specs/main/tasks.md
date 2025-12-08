@@ -2,6 +2,7 @@
 
 - 已實作：多語言介面（中/英/日）、日報填寫與覆寫確認、出勤報表含班別/區域與期間總計、報表雙擊開啟明細、使用者/班別/區域的雙擊編輯、CSV 匯出（隨語言切換）。
 - 編輯視窗：雙擊列表僅開啟單一編輯視窗，避免重複彈出。
+- Delay List：可從 `Z:\☆Junior Supervisor日報\Delay_List` 匯入 Excel，並於報表分頁新增「Delay List」檢視。
 - 尚未完成：Excel 匯入（僅占位提醒）、API/前後端串接（目前單機）、自動化測試與文件建置。
 - 執行方式：`python app.py`（單機 Tkinter 介面，資料庫為 SQLite `handover_system.db`）。
 

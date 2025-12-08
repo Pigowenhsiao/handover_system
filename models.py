@@ -103,6 +103,42 @@ class LotLog(Base):
     report = relationship("DailyReport", back_populates="lot_logs")
 
 
+class DelayEntry(Base):
+    __tablename__ = "delay_entries"
+
+    id: int = Column(Integer, primary_key=True, index=True)
+    delay_date: date = Column(Date, nullable=False)
+    time_range: str = Column(String(50), default="", nullable=False)
+    reactor: str = Column(String(50), default="", nullable=False)
+    process: str = Column(String(100), default="", nullable=False)
+    lot: str = Column(String(50), default="", nullable=False)
+    wafer: str = Column(String(50), default="", nullable=False)
+    progress: str = Column(String(100), default="", nullable=False)
+    prev_steps: str = Column(String(100), default="", nullable=False)
+    prev_time: str = Column(String(50), default="", nullable=False)
+    severity: str = Column(String(50), default="", nullable=False)
+    action: str = Column(Text, default="", nullable=False)
+    note: str = Column(Text, default="", nullable=False)
+    imported_at: datetime = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class SummaryActualEntry(Base):
+    __tablename__ = "summary_actual_entries"
+
+    id: int = Column(Integer, primary_key=True, index=True)
+    summary_date: date = Column(Date, nullable=False)
+    label: str = Column(String(200), default="", nullable=False)
+    plan: int = Column(Integer, default=0, nullable=False)
+    completed: int = Column(Integer, default=0, nullable=False)
+    in_process: int = Column(Integer, default=0, nullable=False)
+    on_track: int = Column(Integer, default=0, nullable=False)
+    at_risk: int = Column(Integer, default=0, nullable=False)
+    delayed: int = Column(Integer, default=0, nullable=False)
+    no_data: int = Column(Integer, default=0, nullable=False)
+    scrapped: int = Column(Integer, default=0, nullable=False)
+    imported_at: datetime = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
 def get_db() -> Generator[Session, None, None]:
     db = SessionLocal()
     try:
