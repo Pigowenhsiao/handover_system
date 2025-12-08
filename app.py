@@ -3,14 +3,27 @@ from __future__ import annotations
 import csv
 import os
 from datetime import date, datetime, timedelta
-from typing import Dict, List, Optional
+from typing import Callable, Dict, List, Optional
 
 import pandas as pd
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 import matplotlib
+from matplotlib import rcParams
 
 matplotlib.use("Agg")
+# Prefer CJK-capable fonts to avoid garbled characters in charts; fallback to system sans.
+rcParams["font.family"] = "sans-serif"
+rcParams["font.sans-serif"] = [
+    "Noto Sans CJK TC",
+    "Noto Sans CJK JP",
+    "Arial Unicode MS",
+    "Microsoft YaHei",
+    "WenQuanYi Micro Hei",
+    "SimHei",
+    "sans-serif",
+]
+rcParams["axes.unicode_minus"] = False
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
@@ -103,6 +116,7 @@ TEXTS: Dict[str, Dict[str, str]] = {
     "search": {"ja": "検索", "en": "Search", "zh": "查詢"},
     "export_csv": {"ja": "CSV出力", "en": "Export CSV", "zh": "匯出 CSV"},
     "confirm_delete": {"ja": "削除してよいですか？", "en": "Are you sure to delete?", "zh": "確定要刪除嗎？"},
+    "delete_success": {"ja": "削除しました", "en": "Deleted successfully", "zh": "刪除成功"},
     "user": {"ja": "ユーザー", "en": "User", "zh": "使用者"},
     "role": {"ja": "権限", "en": "Role", "zh": "角色"},
     "password": {"ja": "パスワード", "en": "Password", "zh": "密碼"},
@@ -178,6 +192,7 @@ TEXTS: Dict[str, Dict[str, str]] = {
     "summary_scrapped": {"ja": "Scrapped", "en": "Scrapped", "zh": "Scrapped"},
     "filter_date": {"ja": "日付フィルタ", "en": "Date Filter", "zh": "日期篩選"},
     "clear_reports": {"ja": "レポート表示をクリア", "en": "Clear Reports", "zh": "清除報表畫面"},
+    "number_invalid": {"ja": "数値は整数で入力してください", "en": "Please enter integer values.", "zh": "請輸入整數值。"},
 }
 
 
@@ -197,6 +212,13 @@ class HandoverApp(tk.Tk):
         self.debug_var = tk.StringVar(value="")  # used to display debug info on UI
         self.delay_pending_records: List[Dict[str, str]] = []
         self.summary_pending_records: List[Dict[str, str]] = []
+        self.att_report_row_map: Dict[str, int] = {}
+        self.att_report_row_data: Dict[str, Dict[str, str]] = {}
+        
+        # Configure styles
+        style = ttk.Style()
+        style.configure('Delete.TButton', foreground='red')
+        
         init_db()
         self._load_options()
         self._build_login()
@@ -320,6 +342,8 @@ class HandoverApp(tk.Tk):
         if target in (None, "all", "att"):
             if hasattr(self, "att_report_tree"):
                 self._clear_tree(self.att_report_tree)
+            self.att_report_row_map = {}
+            self.att_report_row_data = {}
         if target in (None, "all", "equip"):
             for attr in ["equip_tree_detail", "equip_tree_agg"]:
                 if hasattr(self, attr):
@@ -400,14 +424,21 @@ class HandoverApp(tk.Tk):
             new_h = max(200, height - 200)
             self.daily_canvas.config(width=new_w, height=new_h)
             self.daily_canvas.itemconfig(self.daily_window_id, width=new_w)
-    def _show_detail_window(self, tree: ttk.Treeview, title: str) -> None:
+    def _show_detail_window(
+        self,
+        tree: ttk.Treeview,
+        title: str,
+        delete_handler: Optional[Callable[[str, tk.Toplevel], None]] = None,
+        can_delete: Optional[Callable[[str], bool]] = None,
+    ) -> None:
         """Double-click helper to show a simple detail window for report rows."""
         selection = tree.selection()
         if not selection:
             messagebox.showinfo(self._t("info"), self._t("err_select_row"))
             return
+        item_id = selection[0]
         cols = tree["columns"]
-        values = tree.item(selection[0], "values")
+        values = tree.item(item_id, "values")
         win = tk.Toplevel(self)
         win.title(f"{title} - {self._t('detail_title')}")
         frame = ttk.Frame(win)
@@ -416,6 +447,19 @@ class HandoverApp(tk.Tk):
             label = tree.heading(col).get("text") or col
             ttk.Label(frame, text=label).grid(row=idx, column=0, sticky="e", padx=6, pady=4)
             ttk.Label(frame, text=val, wraplength=420, justify="left").grid(row=idx, column=1, sticky="w", padx=6, pady=4)
+
+        allow_delete = False
+        if delete_handler is not None:
+            allow_delete = can_delete(item_id) if can_delete else True
+        if allow_delete:
+            btn_frame = ttk.Frame(frame)
+            btn_frame.grid(row=len(cols), column=0, columnspan=2, pady=(10, 0))
+            ttk.Button(
+                btn_frame,
+                text=self._t("delete"),
+                style="Delete.TButton",
+                command=lambda: delete_handler(item_id, win),
+            ).pack()
 
     # ================= Reports: Attendance =================
     def _build_attendance_report_tab(self) -> None:
@@ -458,9 +502,7 @@ class HandoverApp(tk.Tk):
             self.att_report_tree.heading(col, text=text)
             self.att_report_tree.column(col, width=120)
         self.att_report_tree.pack(fill="both", expand=True, padx=10, pady=5)
-        self.att_report_tree.bind(
-            "<Double-1>", lambda e: self._show_detail_window(self.att_report_tree, self._t("report_att"))
-        )
+        self.att_report_tree.bind("<Double-1>", self._on_att_report_double_click)
 
         self.att_chart_frame = ttk.LabelFrame(self.att_tab, text=self._t("att_chart_title"))
         self.att_chart_frame.pack(fill="both", expand=True, padx=10, pady=5)
@@ -469,6 +511,8 @@ class HandoverApp(tk.Tk):
         mode = self.att_mode_var.get()
         start_str = self.att_start_var.get().strip()
         end_str = self.att_end_var.get().strip()
+        self.att_report_row_map = {}
+        self.att_report_row_data = {}
         try:
             start_date = datetime.strptime(start_str, "%Y-%m-%d").date() if start_str else None
             end_date = datetime.strptime(end_str, "%Y-%m-%d").date() if end_str else None
@@ -495,12 +539,14 @@ class HandoverApp(tk.Tk):
         for att, rep in rows:
             data.append(
                 {
+                    "id": att.id,
                     "date": rep.date,
                     "shift": rep.shift,
                     "area": rep.area,
                     "scheduled": att.scheduled_count,
                     "present": att.present_count,
                     "absent": att.absent_count,
+                    "reason": att.reason or "",
                 }
             )
         if not data:
@@ -540,15 +586,28 @@ class HandoverApp(tk.Tk):
 
         self._clear_tree(self.att_report_tree)
         for _, r in df.iterrows():
+            item_id = f"att-{int(r['id'])}"
             self.att_report_tree.insert(
                 "",
                 "end",
+                iid=item_id,
                 values=(r["period_str"], r["shift"], r["area"], r["scheduled"], r["present"], r["absent"], r["rate"]),
             )
-        for _, r in total_rows.iterrows():
+            self.att_report_row_map[item_id] = int(r["id"])
+            self.att_report_row_data[item_id] = {
+                "date": str(r["date"]),
+                "shift": r["shift"],
+                "area": r["area"],
+                "scheduled": r["scheduled"],
+                "present": r["present"],
+                "absent": r["absent"],
+                "reason": r.get("reason", ""),
+            }
+        for idx, r in total_rows.iterrows():
             self.att_report_tree.insert(
                 "",
                 "end",
+                iid=f"total-{idx}-{r['period_str']}",
                 values=(r["period_str"], r["shift"], r["area"], r["scheduled"], r["present"], r["absent"], r["rate"]),
             )
 
@@ -561,6 +620,111 @@ class HandoverApp(tk.Tk):
         ax.grid(True, linestyle="--", alpha=0.4)
         plt.xticks(rotation=45, ha="right")
         self._embed_chart(self.att_chart_frame, "att_chart_canvas", fig)
+
+    def _delete_att_report_row(self, item_id: str, window: Optional[tk.Toplevel] = None) -> None:
+        """刪除出勤報表中的單筆資料並重載報表。"""
+        record_id = self.att_report_row_map.get(item_id)
+        if record_id is None:
+            messagebox.showinfo(self._t("info"), self._t("err_select_row"))
+            return
+        if not messagebox.askyesno(self._t("delete"), self._t("confirm_delete")):
+            return
+        try:
+            with SessionLocal() as db:
+                entry = db.query(AttendanceEntry).filter(AttendanceEntry.id == record_id).first()
+                if not entry:
+                    messagebox.showerror(self._t("error"), self._t("err_select_row"))
+                    return
+                db.delete(entry)
+                db.commit()
+        except Exception as exc:
+            messagebox.showerror(self._t("error"), f"{exc}")
+            return
+        if window and window.winfo_exists():
+            window.destroy()
+        self._load_attendance_report()
+        messagebox.showinfo(self._t("success"), self._t("delete_success"))
+
+    def _on_att_report_double_click(self, event: tk.Event) -> None:
+        """Handle double click on attendance report rows."""
+        item_id = self.att_report_tree.identify_row(event.y)
+        if not item_id:
+            messagebox.showinfo(self._t("info"), self._t("err_select_row"))
+            return
+        self.att_report_tree.selection_set(item_id)
+        if item_id in self.att_report_row_map:
+            self._open_att_report_editor(item_id)
+        else:
+            self._show_detail_window(self.att_report_tree, self._t("report_att"))
+
+    def _open_att_report_editor(self, item_id: str) -> None:
+        """Open editable dialog for attendance report detail rows."""
+        record_id = self.att_report_row_map.get(item_id)
+        if record_id is None:
+            messagebox.showerror(self._t("error"), self._t("err_select_row"))
+            return
+        try:
+            with SessionLocal() as db:
+                entry = db.query(AttendanceEntry).filter(AttendanceEntry.id == record_id).first()
+        except Exception as exc:
+            messagebox.showerror(self._t("error"), f"{exc}")
+            return
+        if not entry:
+            messagebox.showerror(self._t("error"), self._t("err_select_row"))
+            return
+
+        dlg = tk.Toplevel(self)
+        dlg.title(f"{self._t('report_att')} - {self._t('edit')}")
+
+        fields = [
+            (self._t("att_scheduled"), entry.scheduled_count),
+            (self._t("att_present"), entry.present_count),
+            (self._t("att_absent"), entry.absent_count),
+            (self._t("att_reason"), entry.reason or ""),
+        ]
+        entries: List[tk.Entry] = []
+        for idx, (label, val) in enumerate(fields):
+            ttk.Label(dlg, text=label).grid(row=idx, column=0, padx=6, pady=6, sticky="e")
+            ent = ttk.Entry(dlg, width=20)
+            ent.insert(0, val)
+            ent.grid(row=idx, column=1, padx=6, pady=6)
+            entries.append(ent)
+
+        def do_update() -> None:
+            try:
+                scheduled = int(entries[0].get() or 0)
+                present = int(entries[1].get() or 0)
+                absent = int(entries[2].get() or 0)
+            except ValueError:
+                messagebox.showerror(self._t("error"), self._t("number_invalid"))
+                return
+            reason_val = entries[3].get()
+            try:
+                with SessionLocal() as db:
+                    entry_db = db.query(AttendanceEntry).filter(AttendanceEntry.id == record_id).first()
+                    if not entry_db:
+                        messagebox.showerror(self._t("error"), self._t("err_select_row"))
+                        return
+                    entry_db.scheduled_count = scheduled
+                    entry_db.present_count = present
+                    entry_db.absent_count = absent
+                    entry_db.reason = reason_val
+                    db.commit()
+                dlg.destroy()
+                self._load_attendance_report()
+                messagebox.showinfo(self._t("success"), self._t("submit_updated"))
+            except Exception as exc:
+                messagebox.showerror(self._t("error"), f"{exc}")
+
+        btn_frame = ttk.Frame(dlg)
+        btn_frame.grid(row=len(fields), column=0, columnspan=2, pady=10)
+        ttk.Button(btn_frame, text=self._t("save_update"), command=do_update).pack(side="left", padx=6)
+        ttk.Button(
+            btn_frame,
+            text=self._t("delete"),
+            style="Delete.TButton",
+            command=lambda: self._delete_att_report_row(item_id, dlg),
+        ).pack(side="left", padx=6)
 
     def _export_attendance_csv(self) -> None:
         rows = [self.att_report_tree.item(i, "values") for i in self.att_report_tree.get_children()]
@@ -1976,7 +2140,9 @@ class HandoverApp(tk.Tk):
             self._log_debug("dbg_update_att", id=item_id)
             dialog.destroy()
 
-        ttk.Button(dialog, text="確定", command=confirm).grid(row=5, column=0, columnspan=2, pady=10)
+        btn_frame = ttk.Frame(dialog)
+        btn_frame.grid(row=5, column=0, columnspan=2, pady=10)
+        ttk.Button(btn_frame, text="確定", command=confirm).pack(side="left", padx=5)
 
     def _collect_equipment(self) -> List[Dict[str, str]]:
         data = []
