@@ -17,7 +17,7 @@ class UserRole(str, Enum):
 class UserBase(BaseModel):
     """用戶基礎模型"""
     username: str = Field(..., min_length=3, max_length=50)
-    email: Optional[str] = Field(None, regex=r'^[\w\.-]+@[\w\.-]+\.\w+$')
+    email: Optional[str] = Field(None, pattern=r'^[\w\.-]+@[\w\.-]+\.\w+$')
     role: Optional[UserRole] = UserRole.USER
     is_active: Optional[bool] = True
 
@@ -30,7 +30,7 @@ class UserCreate(UserBase):
 class UserUpdate(BaseModel):
     """更新用戶模型"""
     username: Optional[str] = Field(None, min_length=3, max_length=50)
-    email: Optional[str] = Field(None, regex=r'^[\w\.-]+@[\w\.-]+\.\w+$')
+    email: Optional[str] = Field(None, pattern=r'^[\w\.-]+@[\w\.-]+\.\w+$')
     role: Optional[UserRole] = None
     is_active: Optional[bool] = None
     password: Optional[str] = Field(None, min_length=6)
