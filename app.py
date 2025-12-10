@@ -7,12 +7,16 @@ from typing import Dict, List, Optional
 
 import pandas as pd
 import tkinter as tk
-from tkinter import ttk, messagebox, filedialog
+from tkinter import ttk, messagebox, filedialog, font
 import matplotlib
 
 matplotlib.use("Agg")
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
+# Improve multilingual font rendering (Zh/Ja) for charts
+plt.rcParams["font.family"] = ["Microsoft JhengHei", "MS Gothic", "SimHei", "Arial Unicode MS", "sans-serif"]
+plt.rcParams["axes.unicode_minus"] = False
 
 from auth import verify_password, hash_password
 from models import (
@@ -197,6 +201,8 @@ class HandoverApp(tk.Tk):
         self.debug_var = tk.StringVar(value="")  # used to display debug info on UI
         self.delay_pending_records: List[Dict[str, str]] = []
         self.summary_pending_records: List[Dict[str, str]] = []
+        self.summary_delayed_font = None
+        self._enter_binding: Optional[str] = None
         init_db()
         self._load_options()
         self._build_login()
@@ -216,6 +222,9 @@ class HandoverApp(tk.Tk):
     def _build_login(self) -> None:
         self.login_frame = ttk.Frame(self)
         self.login_frame.pack(expand=True)
+        if self._enter_binding:
+            self.unbind("<Return>", self._enter_binding)
+            self._enter_binding = None
 
         self.lang_var = tk.StringVar(value=self._lang_name(self.lang))
         lang_frame = ttk.Frame(self.login_frame)
@@ -232,9 +241,13 @@ class HandoverApp(tk.Tk):
         self.username_var = tk.StringVar()
         self.password_var = tk.StringVar()
         ttk.Entry(self.login_frame, textvariable=self.username_var).grid(row=2, column=1, padx=5, pady=5)
-        ttk.Entry(self.login_frame, textvariable=self.password_var, show="*").grid(row=3, column=1, padx=5, pady=5)
+        pw_entry = ttk.Entry(self.login_frame, textvariable=self.password_var, show="*")
+        pw_entry.grid(row=3, column=1, padx=5, pady=5)
 
         ttk.Button(self.login_frame, text=self._t("login_button"), command=self._handle_login).grid(row=4, column=0, columnspan=2, pady=10)
+        # Allow Enter key to trigger login on the login screen
+        self._enter_binding = self.bind("<Return>", lambda e: self._handle_login())
+        pw_entry.focus_set()
 
     def _handle_login(self) -> None:
         username = self.username_var.get().strip()
@@ -254,6 +267,9 @@ class HandoverApp(tk.Tk):
             return
 
         if self.session_user:
+            if self._enter_binding:
+                self.unbind("<Return>", self._enter_binding)
+                self._enter_binding = None
             self.login_frame.destroy()
             self._build_main_ui()
         else:
@@ -881,9 +897,11 @@ class HandoverApp(tk.Tk):
             anchor = "center" if col != "note" and col != "action" and col != "progress" else "w"
             self.delay_tree.column(col, width=width, stretch=stretch, anchor=anchor)
         self.delay_tree.pack(fill="both", expand=True, padx=10, pady=5)
-        self.delay_tree.bind("<Double-1>", lambda e: self._edit_delay_dialog())
-        ttk.Scrollbar(self.delay_tab, orient="vertical", command=self.delay_tree.yview).pack(side="right", fill="y")
-        self.delay_tree.configure(yscrollcommand=self.delay_tree.yview)
+        self.delay_tree.bind("<Double-1>", self._start_delay_cell_edit)
+        self.delay_tree.bind("<Button-3>", self._show_delay_context_menu)
+        delay_scroll = ttk.Scrollbar(self.delay_tab, orient="vertical", command=lambda *args: self._tree_yview_safe(self.delay_tree, *args))
+        delay_scroll.pack(side="right", fill="y")
+        self.delay_tree.configure(yscrollcommand=delay_scroll.set)
         self._load_delay_entries()
 
     def _render_delay_rows(self, rows: List[Dict[str, str]], pending: bool = False) -> None:
@@ -957,32 +975,42 @@ class HandoverApp(tk.Tk):
         path = filedialog.askopenfilename(
             initialdir=r"Z:\\☆Junior Supervisor日報\\Delay_List",
             title=self._t("import_delay"),
-            filetypes=[("Excel Files", "*.xlsx;*.xls")],
+            filetypes=[
+                ("Excel/Text Files", "*.xlsx;*.xls;*.xlsm;*.csv;*.txt"),
+                ("All Files", "*.*"),
+            ],
         )
         if not path:
             return
+        ext = os.path.splitext(path)[1].lower()
+        is_excel = ext in (".xlsx", ".xls", ".xlsm")
         try:
-            xls = pd.ExcelFile(path)
-            sheet_name = xls.sheet_names[0]
-            if len(xls.sheet_names) > 1:
-                picker = tk.Toplevel(self)
-                picker.title(self._t("tab_delay"))
-                ttk.Label(picker, text="Select sheet").pack(padx=10, pady=5)
-                sheet_var = tk.StringVar(value=xls.sheet_names[0])
-                combo = ttk.Combobox(picker, textvariable=sheet_var, values=xls.sheet_names, state="readonly")
-                combo.pack(padx=10, pady=5)
-                chosen = {"name": sheet_name}
+            if is_excel:
+                xls = pd.ExcelFile(path)
+                sheet_name = xls.sheet_names[0]
+                if len(xls.sheet_names) > 1:
+                    picker = tk.Toplevel(self)
+                    picker.title(self._t("tab_delay"))
+                    ttk.Label(picker, text="Select sheet").pack(padx=10, pady=5)
+                    sheet_var = tk.StringVar(value=xls.sheet_names[0])
+                    combo = ttk.Combobox(picker, textvariable=sheet_var, values=xls.sheet_names, state="readonly")
+                    combo.pack(padx=10, pady=5)
+                    chosen = {"name": sheet_name}
 
-                def confirm():
-                    chosen["name"] = sheet_var.get()
-                    picker.destroy()
+                    def confirm():
+                        chosen["name"] = sheet_var.get()
+                        picker.destroy()
 
-                ttk.Button(picker, text="OK", command=confirm).pack(pady=8)
-                picker.grab_set()
-                picker.wait_window()
-                sheet_name = chosen["name"]
+                    ttk.Button(picker, text="OK", command=confirm).pack(pady=8)
+                    picker.grab_set()
+                    picker.wait_window()
+                    sheet_name = chosen["name"]
 
-            df = pd.read_excel(xls, sheet_name=sheet_name, header=1)
+                df = pd.read_excel(xls, sheet_name=sheet_name, header=1)
+            else:
+                df = pd.read_csv(path, header=0, sep=None, engine="python")
+                if not any("date" in str(c).lower() for c in df.columns):
+                    df = pd.read_csv(path, header=1, sep=None, engine="python")
         except Exception as exc:
             messagebox.showerror(self._t("error"), f"{exc}")
             return
@@ -1118,13 +1146,30 @@ class HandoverApp(tk.Tk):
             stretch = False if col == "id" else True
             anchor = "center" if col not in ("label",) else "w"
             self.summary_tree.column(col, width=width, stretch=stretch, anchor=anchor)
+        # Font for delayed>0
+        if self.summary_delayed_font is None:
+            base_font = font.nametofont("TkDefaultFont").copy()
+            try:
+                base_size = int(base_font.cget("size"))
+            except Exception:
+                base_size = 10
+            base_font.configure(weight="bold", size=base_size + 2)
+            self.summary_delayed_font = base_font
+        self.summary_tree.tag_configure("delayed_positive", foreground="red", font=self.summary_delayed_font)
         self.summary_tree.pack(fill="both", expand=True, padx=10, pady=5)
-        self.summary_tree.bind(
-            "<Double-1>", lambda e: self._edit_summary_dialog()
-        )
-        ttk.Scrollbar(self.summary_actual_tab, orient="vertical", command=self.summary_tree.yview).pack(side="right", fill="y")
-        self.summary_tree.configure(yscrollcommand=self.summary_tree.yview)
+        self.summary_tree.bind("<Double-1>", self._start_summary_cell_edit)
+        self.summary_tree.bind("<Button-3>", self._show_summary_context_menu)
+        summary_scroll = ttk.Scrollbar(self.summary_actual_tab, orient="vertical", command=lambda *args: self._tree_yview_safe(self.summary_tree, *args))
+        summary_scroll.pack(side="right", fill="y")
+        self.summary_tree.configure(yscrollcommand=summary_scroll.set)
         self._load_summary_actual()
+
+    def _tree_yview_safe(self, tree: ttk.Treeview, *args: object) -> None:
+        """Allow Scrollbar callbacks that sometimes pass a single fraction."""
+        if len(args) == 1 and not str(args[0]).isalpha():
+            tree.yview("moveto", args[0])
+        else:
+            tree.yview(*args)
 
     def _load_summary_actual(self) -> None:
         self._clear_tree(self.summary_tree)
@@ -1197,45 +1242,100 @@ class HandoverApp(tk.Tk):
     def _import_summary_actual_excel(self) -> None:
         path = filedialog.askopenfilename(
             title=self._t("import_summary_actual"),
-            filetypes=[("Excel Files", "*.xlsx;*.xls")],
+            filetypes=[
+                ("Excel/Text Files", "*.xlsx;*.xls;*.xlsm;*.csv;*.txt"),
+                ("All Files", "*.*"),
+            ],
         )
         if not path:
             return
+        ext = os.path.splitext(path)[1].lower()
+        is_excel = ext in (".xlsx", ".xls", ".xlsm")
+
+        def _read_summary_file(header: Optional[int]):
+            """Load summary file supporting Excel and delimited text."""
+            if is_excel:
+                try:
+                    return pd.read_excel(path, sheet_name="Summary(Actual)", header=header)
+                except ValueError:
+                    return pd.read_excel(path, sheet_name=0, header=header)
+            return pd.read_csv(path, header=header, sep=None, engine="python")
         try:
-            # Read entire sheet without header to get date row (row index 1)
-            raw_sheet = pd.read_excel(path, sheet_name="Summary(Actual)", header=None)
+            raw_sheet = _read_summary_file(header=None)
         except Exception as exc:
             messagebox.showerror(self._t("error"), f"{exc}")
             return
+
+        # Detect latest date by scanning the top few rows and forward-filling merged headers.
         summary_date = None
-        if len(raw_sheet) > 1:
-            for val in raw_sheet.iloc[1].dropna().tolist():
-                parsed = pd.to_datetime(val, errors="coerce")
-                if pd.isna(parsed):
-                    continue
-                summary_date = parsed.date()
-                break
+        try:
+            header_probe = raw_sheet.iloc[:3].copy()
+            header_probe = header_probe.ffill(axis=1)
+            date_candidates: List[date] = []
+            date_by_col: Dict[int, date] = {}
+            for row in header_probe.itertuples(index=False):
+                for idx, val in enumerate(row):
+                    parsed = pd.to_datetime(val, errors="coerce")
+                    if pd.isna(parsed):
+                        continue
+                    d = parsed.date()
+                    date_candidates.append(d)
+                    date_by_col[idx] = d
+            if date_candidates:
+                summary_date = max(date_candidates)
+                target_cols = [idx for idx, d in date_by_col.items() if d == summary_date]
+            else:
+                summary_date = None
+                target_cols = []
+        except Exception:
+            summary_date = None
+            target_cols = []
+
         if not summary_date:
             messagebox.showerror(self._t("error"), self._t("date_format_invalid"))
             return
 
         try:
-            df = pd.read_excel(path, sheet_name="Summary(Actual)", header=2)
+            header_row = 2 if is_excel else 0
+            df = _read_summary_file(header=header_row)
         except Exception as exc:
             messagebox.showerror(self._t("error"), f"{exc}")
             return
 
-        # Normalize column names
-        def norm(col: str) -> str:
-            return str(col).strip().lower().replace(" ", "").replace("_", "")
+        # Map columns strictly by the latest date block (keeps Excel order).
+        block_cols = sorted(target_cols)
 
-        col_lookup = {norm(c): c for c in df.columns}
+        def block_col(offset: int) -> Optional[str]:
+            if offset < len(block_cols):
+                return df.columns[block_cols[offset]]
+            return None
 
-        def get_col(key: str) -> Optional[str]:
-            return col_lookup.get(key, None)
+        col_order = ["plan", "completed", "in_process", "on_track", "at_risk", "delayed", "no_data", "scrapped"]
+        col_map = {name: block_col(i) for i, name in enumerate(col_order)}
+        # Fallback: if block detection failed for some reason, try name-based search across all columns.
+        if not any(col_map.values()):
+            def norm(col: str) -> str:
+                return str(col).strip().lower().replace(" ", "").replace("_", "")
+            norm_cols = {idx: norm(col) for idx, col in enumerate(df.columns)}
+            def find_col(patterns: List[str]) -> Optional[str]:
+                for idx in range(len(df.columns)):
+                    name = norm_cols.get(idx, "")
+                    if any(pat in name for pat in patterns):
+                        return df.columns[idx]
+                return None
+            col_map = {
+                "plan": find_col(["plan"]),
+                "completed": find_col(["completed"]),
+                "in_process": find_col(["inprocess", "in_process"]),
+                "on_track": find_col(["ontrack", "on_track"]),
+                "at_risk": find_col(["atrisk", "at_risk"]),
+                "delayed": find_col(["delayed"]),
+                "no_data": find_col(["nodata", "no_data"]),
+                "scrapped": find_col(["scrapped"]),
+            }
 
         def get_val(row, key: str) -> int:
-            col = get_col(key)
+            col = col_map.get(key)
             if col is None:
                 return 0
             val = row.get(col)
@@ -1264,11 +1364,11 @@ class HandoverApp(tk.Tk):
                     "label": label_val,
                     "plan": get_val(row, "plan"),
                     "completed": get_val(row, "completed"),
-                    "in_process": get_val(row, "inprocess"),
-                    "on_track": get_val(row, "ontrack"),
-                    "at_risk": get_val(row, "atrisk"),
+                    "in_process": get_val(row, "in_process"),
+                    "on_track": get_val(row, "on_track"),
+                    "at_risk": get_val(row, "at_risk"),
                     "delayed": get_val(row, "delayed"),
-                    "no_data": get_val(row, "nodata"),
+                    "no_data": get_val(row, "no_data"),
                     "scrapped": get_val(row, "scrapped"),
                 }
             )
@@ -1523,6 +1623,229 @@ class HandoverApp(tk.Tk):
 
         ttk.Button(dlg, text=self._t("save_update"), command=save).grid(row=len(fields), column=0, columnspan=2, pady=10)
         dlg.protocol("WM_DELETE_WINDOW", lambda: (setattr(self, "_summary_edit_win", None), dlg.destroy()))
+
+    # ============= Inline edit & context menu: Delay/Summary =============
+    def _start_delay_cell_edit(self, event: tk.Event) -> None:
+        item = self.delay_tree.identify_row(event.y)
+        col = self.delay_tree.identify_column(event.x)
+        if not item or col == "#1":
+            return
+        bbox = self.delay_tree.bbox(item, col)
+        if not bbox:
+            return
+        x, y, w, h = bbox
+        text = self.delay_tree.set(item, col)
+        entry = tk.Entry(self.delay_tree)
+        entry.place(x=x, y=y, width=w, height=h)
+        entry.insert(0, text)
+        entry.focus_set()
+
+        def commit(*_: object) -> None:
+            new_val = entry.get().strip()
+            entry.destroy()
+            self._apply_delay_cell_edit(item, col, new_val)
+
+        entry.bind("<FocusOut>", commit)
+        entry.bind("<Return>", commit)
+        entry.bind("<Escape>", lambda *_: entry.destroy())
+
+    def _apply_delay_cell_edit(self, item: str, col: str, new_val: str) -> None:
+        col_map = {
+            "#2": "delay_date",
+            "#3": "time_range",
+            "#4": "reactor",
+            "#5": "process",
+            "#6": "lot",
+            "#7": "wafer",
+            "#8": "progress",
+            "#9": "prev_steps",
+            "#10": "prev_time",
+            "#11": "severity",
+            "#12": "action",
+            "#13": "note",
+        }
+        field = col_map.get(col)
+        if not field:
+            return
+        row_id_val = self.delay_tree.item(item, "values")[0] if self.delay_tree.item(item, "values") else item
+        try:
+            if isinstance(row_id_val, str) and row_id_val.startswith("P"):
+                idx = int(row_id_val[1:])
+                if idx < 0 or idx >= len(self.delay_pending_records):
+                    return
+                rec = self.delay_pending_records[idx]
+                if field == "delay_date":
+                    rec[field] = datetime.strptime(new_val, "%Y-%m-%d").date()
+                else:
+                    rec[field] = new_val
+                self._render_delay_rows(self.delay_pending_records, pending=True)
+            else:
+                with SessionLocal() as db:
+                    row = db.query(DelayEntry).filter(DelayEntry.id == int(row_id_val)).first()
+                    if not row:
+                        return
+                    if field == "delay_date":
+                        row.delay_date = datetime.strptime(new_val, "%Y-%m-%d").date()
+                    else:
+                        setattr(row, field, new_val)
+                    db.commit()
+                self._load_delay_entries()
+        except Exception as exc:
+            messagebox.showerror(self._t("error"), f"{exc}")
+
+    def _show_delay_context_menu(self, event: tk.Event) -> None:
+        item = self.delay_tree.identify_row(event.y)
+        if item and item not in self.delay_tree.selection():
+            self.delay_tree.selection_set(item)
+        menu = tk.Menu(self.delay_tree, tearoff=0)
+        menu.add_command(label=self._t("delete"), command=self._delete_delay_selected)
+        menu.tk_popup(event.x_root, event.y_root)
+
+    def _delete_delay_selected(self) -> None:
+        sel = self.delay_tree.selection()
+        if not sel:
+            messagebox.showinfo(self._t("info"), self._t("err_select_row"))
+            return
+        pending_idxs = []
+        db_ids = []
+        for item in sel:
+            row_id_val = self.delay_tree.item(item, "values")[0] if self.delay_tree.item(item, "values") else None
+            if isinstance(row_id_val, str) and row_id_val.startswith("P"):
+                try:
+                    pending_idxs.append(int(row_id_val[1:]))
+                except Exception:
+                    continue
+            else:
+                try:
+                    db_ids.append(int(row_id_val))
+                except Exception:
+                    continue
+        pending_idxs.sort(reverse=True)
+        for idx in pending_idxs:
+            if 0 <= idx < len(self.delay_pending_records):
+                self.delay_pending_records.pop(idx)
+        if db_ids:
+            try:
+                with SessionLocal() as db:
+                    db.query(DelayEntry).filter(DelayEntry.id.in_(db_ids)).delete(synchronize_session=False)
+                    db.commit()
+            except Exception as exc:
+                messagebox.showerror(self._t("error"), f"{exc}")
+                return
+        self._load_delay_entries()
+
+    def _start_summary_cell_edit(self, event: tk.Event) -> None:
+        item = self.summary_tree.identify_row(event.y)
+        col = self.summary_tree.identify_column(event.x)
+        if not item or col == "#1":
+            return
+        bbox = self.summary_tree.bbox(item, col)
+        if not bbox:
+            return
+        x, y, w, h = bbox
+        text = self.summary_tree.set(item, col)
+        entry = tk.Entry(self.summary_tree)
+        entry.place(x=x, y=y, width=w, height=h)
+        entry.insert(0, text)
+        entry.focus_set()
+
+        def commit(*_: object) -> None:
+            new_val = entry.get().strip()
+            entry.destroy()
+            self._apply_summary_cell_edit(item, col, new_val)
+
+        entry.bind("<FocusOut>", commit)
+        entry.bind("<Return>", commit)
+        entry.bind("<Escape>", lambda *_: entry.destroy())
+
+    def _apply_summary_cell_edit(self, item: str, col: str, new_val: str) -> None:
+        col_map = {
+            "#2": ("summary_date", "date"),
+            "#3": ("label", "text"),
+            "#4": ("plan", "int"),
+            "#5": ("completed", "int"),
+            "#6": ("in_process", "int"),
+            "#7": ("on_track", "int"),
+            "#8": ("at_risk", "int"),
+            "#9": ("delayed", "int"),
+            "#10": ("no_data", "int"),
+            "#11": ("scrapped", "int"),
+        }
+        field_info = col_map.get(col)
+        if not field_info:
+            return
+        field, ftype = field_info
+        row_id_val = self.summary_tree.item(item, "values")[0] if self.summary_tree.item(item, "values") else item
+
+        def cast_val(val: str):
+            if ftype == "date":
+                return datetime.strptime(val, "%Y-%m-%d").date()
+            if ftype == "int":
+                try:
+                    return int(val or 0)
+                except Exception:
+                    return 0
+            return val
+
+        try:
+            if isinstance(row_id_val, str) and row_id_val.startswith("P"):
+                idx = int(row_id_val[1:])
+                if idx < 0 or idx >= len(self.summary_pending_records):
+                    return
+                rec = self.summary_pending_records[idx]
+                rec[field] = cast_val(new_val)
+                self._load_summary_actual()
+            else:
+                with SessionLocal() as db:
+                    row = db.query(SummaryActualEntry).filter(SummaryActualEntry.id == int(row_id_val)).first()
+                    if not row:
+                        return
+                    setattr(row, field, cast_val(new_val))
+                    db.commit()
+                self._load_summary_actual()
+        except Exception as exc:
+            messagebox.showerror(self._t("error"), f"{exc}")
+
+    def _show_summary_context_menu(self, event: tk.Event) -> None:
+        item = self.summary_tree.identify_row(event.y)
+        if item and item not in self.summary_tree.selection():
+            self.summary_tree.selection_set(item)
+        menu = tk.Menu(self.summary_tree, tearoff=0)
+        menu.add_command(label=self._t("delete"), command=self._delete_summary_selected)
+        menu.tk_popup(event.x_root, event.y_root)
+
+    def _delete_summary_selected(self) -> None:
+        sel = self.summary_tree.selection()
+        if not sel:
+            messagebox.showinfo(self._t("info"), self._t("err_select_row"))
+            return
+        pending_idxs = []
+        db_ids = []
+        for item in sel:
+            row_id_val = self.summary_tree.item(item, "values")[0] if self.summary_tree.item(item, "values") else None
+            if isinstance(row_id_val, str) and row_id_val.startswith("P"):
+                try:
+                    pending_idxs.append(int(row_id_val[1:]))
+                except Exception:
+                    continue
+            else:
+                try:
+                    db_ids.append(int(row_id_val))
+                except Exception:
+                    continue
+        pending_idxs.sort(reverse=True)
+        for idx in pending_idxs:
+            if 0 <= idx < len(self.summary_pending_records):
+                self.summary_pending_records.pop(idx)
+        if db_ids:
+            try:
+                with SessionLocal() as db:
+                    db.query(SummaryActualEntry).filter(SummaryActualEntry.id.in_(db_ids)).delete(synchronize_session=False)
+                    db.commit()
+            except Exception as exc:
+                messagebox.showerror(self._t("error"), f"{exc}")
+                return
+        self._load_summary_actual()
     def _load_lot_report(self) -> None:
         mode = self.lot_mode_var.get()
         start_str = self.lot_start_var.get().strip()
