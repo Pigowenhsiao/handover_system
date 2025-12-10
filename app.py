@@ -202,6 +202,7 @@ class HandoverApp(tk.Tk):
         self.delay_pending_records: List[Dict[str, str]] = []
         self.summary_pending_records: List[Dict[str, str]] = []
         self.summary_delayed_font = None
+        self.summary_on_track_font = None
         self._enter_binding: Optional[str] = None
         init_db()
         self._load_options()
@@ -1098,19 +1099,27 @@ class HandoverApp(tk.Tk):
 
     # ================= Reports: Summary Actual =================
     def _build_summary_actual_tab(self) -> None:
-        control = ttk.Frame(self.summary_actual_tab)
-        control.pack(fill="x", padx=10, pady=5)
-        ttk.Label(control, text=self._t("filter_date")).grid(row=0, column=0, padx=5, pady=5, sticky="e")
+        btn_frame = ttk.Frame(self.summary_actual_tab)
+        btn_frame.pack(fill="x", padx=10, pady=5)
+        ttk.Button(btn_frame, text=self._t("import_summary_actual"), command=self._import_summary_actual_excel).pack(
+            side="left", padx=5
+        )
+        ttk.Button(btn_frame, text=self._t("confirm_upload"), command=self._upload_summary_pending).pack(
+            side="left", padx=5
+        )
+        ttk.Button(btn_frame, text=self._t("refresh"), command=self._load_summary_actual).pack(side="left", padx=5)
+
+        filter_frame = ttk.Frame(self.summary_actual_tab)
+        filter_frame.pack(fill="x", padx=10, pady=5)
+        ttk.Label(filter_frame, text=self._t("start_date")).grid(row=0, column=0, padx=4, pady=4, sticky="e")
         self.summary_start_var = tk.StringVar()
-        ttk.Entry(control, textvariable=self.summary_start_var, width=12).grid(row=0, column=1, padx=5, pady=5)
-        ttk.Label(control, text=self._t("end_date")).grid(row=0, column=2, padx=5, pady=5, sticky="e")
+        ttk.Entry(filter_frame, textvariable=self.summary_start_var, width=12).grid(row=0, column=1, padx=4, pady=4)
+        ttk.Label(filter_frame, text=self._t("end_date")).grid(row=0, column=2, padx=4, pady=4, sticky="e")
         self.summary_end_var = tk.StringVar()
-        ttk.Entry(control, textvariable=self.summary_end_var, width=12).grid(row=0, column=3, padx=5, pady=5)
-        ttk.Button(control, text=self._t("search"), command=self._load_summary_actual).grid(row=0, column=4, padx=5, pady=5)
-        ttk.Button(control, text=self._t("import_summary_actual"), command=self._import_summary_actual_excel).grid(row=0, column=5, padx=5, pady=5)
-        ttk.Button(control, text=self._t("confirm_upload"), command=self._upload_summary_pending).grid(row=0, column=6, padx=5, pady=5)
-        ttk.Button(control, text=self._t("clear_reports"), command=lambda: self._clear_reports_view("summary")).grid(
-            row=0, column=7, padx=5, pady=5
+        ttk.Entry(filter_frame, textvariable=self.summary_end_var, width=12).grid(row=0, column=3, padx=4, pady=4)
+        ttk.Button(filter_frame, text=self._t("search"), command=self._load_summary_actual).grid(row=0, column=4, padx=6, pady=4)
+        ttk.Button(filter_frame, text=self._t("clear_reports"), command=lambda: self._clear_reports_view("summary")).grid(
+            row=0, column=5, padx=6, pady=4
         )
 
         cols = (
@@ -1139,23 +1148,27 @@ class HandoverApp(tk.Tk):
             self._t("summary_no_data"),
             self._t("summary_scrapped"),
         ]
-        self.summary_tree = ttk.Treeview(self.summary_actual_tab, columns=cols, show="headings", height=16)
+        self.summary_tree = ttk.Treeview(self.summary_actual_tab, columns=cols, show="headings", height=18)
         for col, header in zip(cols, headers):
             self.summary_tree.heading(col, text=header)
             width = 50 if col == "id" else 110
             stretch = False if col == "id" else True
             anchor = "center" if col not in ("label",) else "w"
             self.summary_tree.column(col, width=width, stretch=stretch, anchor=anchor)
-        # Font for delayed>0
-        if self.summary_delayed_font is None:
+        # Bold highlight fonts for key status columns
+        if self.summary_delayed_font is None or self.summary_on_track_font is None:
             base_font = font.nametofont("TkDefaultFont").copy()
             try:
                 base_size = int(base_font.cget("size"))
             except Exception:
                 base_size = 10
             base_font.configure(weight="bold", size=base_size + 2)
-            self.summary_delayed_font = base_font
+            if self.summary_delayed_font is None:
+                self.summary_delayed_font = base_font.copy()
+            if self.summary_on_track_font is None:
+                self.summary_on_track_font = base_font.copy()
         self.summary_tree.tag_configure("delayed_positive", foreground="red", font=self.summary_delayed_font)
+        self.summary_tree.tag_configure("on_track_positive", foreground="blue", font=self.summary_on_track_font)
         self.summary_tree.pack(fill="both", expand=True, padx=10, pady=5)
         self.summary_tree.bind("<Double-1>", self._start_summary_cell_edit)
         self.summary_tree.bind("<Button-3>", self._show_summary_context_menu)
@@ -1188,6 +1201,20 @@ class HandoverApp(tk.Tk):
         def fmt(v: int) -> str:
             return "-" if v == 0 else str(v)
 
+        def row_tags(delayed_val: object, on_track_val: object) -> tuple:
+            tags: List[str] = []
+            try:
+                if int(delayed_val) > 0:
+                    tags.append("delayed_positive")
+            except Exception:
+                pass
+            try:
+                if int(on_track_val) > 0:
+                    tags.append("on_track_positive")
+            except Exception:
+                pass
+            return tuple(tags)
+
         if self.summary_pending_records:
             for idx, r in enumerate(self.summary_pending_records):
                 self.summary_tree.insert(
@@ -1206,6 +1233,7 @@ class HandoverApp(tk.Tk):
                         fmt(r["no_data"]),
                         fmt(r["scrapped"]),
                     ),
+                    tags=row_tags(r.get("delayed"), r.get("on_track")),
                 )
             return
 
@@ -1237,6 +1265,7 @@ class HandoverApp(tk.Tk):
                     fmt(r.no_data),
                     fmt(r.scrapped),
                 ),
+                tags=row_tags(r.delayed, r.on_track),
             )
 
     def _import_summary_actual_excel(self) -> None:
