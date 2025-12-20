@@ -22,7 +22,7 @@ echo.
 
 rem Run the application
 echo Starting application...
-python main.py
+python app.py
 
 rem If Python execution fails, show error message
 if errorlevel 1 (

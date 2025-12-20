@@ -22,7 +22,7 @@ echo.
 
 rem 運行應用程式
 echo 正在啟動應用程式...
-python main.py
+python app.py
 
 rem 如果 Python 執行失敗，顯示錯誤訊息
 if errorlevel 1 (

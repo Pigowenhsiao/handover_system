@@ -29,7 +29,7 @@ pip install pillow bcrypt
 ### 2.3 專案結構 (Project Structure)
 ```
 handover_system/
-├── main.py                 # 主入口點
+├── app.py                  # 主入口點
 ├── handover_app.py         # 應用程式主類
 ├── language_manager.py     # 語言管理
 ├── database_manager.py     # 數據庫管理
@@ -50,7 +50,7 @@ handover_system/
 ### 3.1 首次運行 (First Run)
 1. 克隆或下載專案到本地
 2. 安裝依賴
-3. 執行 `python main.py`（或 Windows 雙擊 `start.bat`）
+3. 執行 `python app.py`（或 Windows 雙擊 `start.bat`）
 4. 系統會在本機建立 SQLite 資料庫並建立初始管理員 (admin/1234)
 
 ### 3.2 系統初始化 (System Initialization)
@@ -140,7 +140,7 @@ handover_system/
 1. 使用 PyInstaller 打包：
 ```bash
 pip install pyinstaller
-pyinstaller --onefile --windowed --add-data "locale;locale" main.py
+pyinstaller --onefile --windowed --add-data "locale;locale" app.py
 ```
 2. 分發可執行檔
 3. 確保目標機可讀寫本機 SQLite 檔（無需部署 DB 伺服器）
