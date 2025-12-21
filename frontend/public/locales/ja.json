@@ -5,7 +5,7 @@
     "login": "ログイン",
     "logout": "ログアウト",
     "subtitle": "引き継ぎ管理システム",
-    "version": "バージョン 2.1"
+    "version": "バージョン 2.2"
   },
   "navigation": {
     "home": "ホーム",
@@ -18,6 +18,7 @@
     "equipment": "設備異常",
     "lot": "異常ロット",
     "summary": "サマリー",
+    "abnormalHistory": "異常履歴",
     "masterData": "基本データ管理",
     "delayList": "ディレイリスト",
     "summaryActual": "Summary Actual"
@@ -90,7 +91,8 @@
     "emptyData": "データが見つかりません",
     "uploadSuccess": "アップロード成功",
     "selectRow": "行を選択してください",
-    "selectDate": "日付を選択"
+    "selectDate": "日付を選択",
+    "all": "すべて"
   },
   "reports": {
     "title": "日報",
@@ -147,6 +149,10 @@
       "title": "出勤統計",
       "subtitle": "期間内の出勤情報を集計"
     },
+    "abnormalHistory": {
+      "title": "異常履歴",
+      "subtitle": "設備異常とロット異常の履歴を検索"
+    },
     "admin": {
       "title": "システム管理",
       "subtitle": "ユーザー・翻訳・設定を管理"
@@ -170,6 +176,9 @@
     "attendanceSummary": "出勤統計",
     "attendanceTable": "出勤統計表",
     "attendanceCharts": "出勤グラフ",
+    "abnormalHistorySearch": "異常履歴検索",
+    "abnormalEquipmentHistory": "設備異常履歴",
+    "abnormalLotHistory": "ロット異常履歴",
     "databaseSettings": "データベース設定",
     "systemSettings": "システム設定",
     "delayList": "ディレイリスト",
@@ -206,6 +215,13 @@
     "rateSeries": "出勤率",
     "countChartTitle": "出勤人数",
     "countAxis": "出勤人数"
+  },
+  "abnormalHistory": {
+    "startDate": "開始日",
+    "endDate": "終了日",
+    "missingRange": "開始日と終了日を選択してください。",
+    "invalidRange": "終了日は開始日より前にできません。",
+    "loadFailed": "検索に失敗しました：{error}"
   },
   "actions": {
     "saveDailyReport": "💾 日報を保存",

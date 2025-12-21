@@ -5,7 +5,7 @@
     "login": "登入",
     "logout": "登出",
     "subtitle": "交接管理系統",
-    "version": "版本 2.1"
+    "version": "版本 2.2"
   },
   "navigation": {
     "home": "首頁",
@@ -18,6 +18,7 @@
     "equipment": "設備異常",
     "lot": "異常批次",
     "summary": "總結",
+    "abnormalHistory": "異常歷史",
     "masterData": "基本資料管理",
     "delayList": "延遲清單",
     "summaryActual": "Summary Actual"
@@ -90,7 +91,8 @@
     "emptyData": "查無資料",
     "uploadSuccess": "上傳成功",
     "selectRow": "請先選擇一列",
-    "selectDate": "選擇日期"
+    "selectDate": "選擇日期",
+    "all": "全部"
   },
   "reports": {
     "title": "日報表",
@@ -147,6 +149,10 @@
       "title": "出勤統計",
       "subtitle": "依日期區間彙整出勤資訊"
     },
+    "abnormalHistory": {
+      "title": "異常歷史查詢",
+      "subtitle": "查詢設備異常與異常批次歷史"
+    },
     "admin": {
       "title": "系統管理",
       "subtitle": "管理使用者、翻譯資源與系統設定"
@@ -170,6 +176,9 @@
     "attendanceSummary": "出勤統計",
     "attendanceTable": "出勤統計表",
     "attendanceCharts": "出勤圖表",
+    "abnormalHistorySearch": "異常歷史查詢",
+    "abnormalEquipmentHistory": "設備異常歷史",
+    "abnormalLotHistory": "異常批次歷史",
     "databaseSettings": "資料庫設定",
     "systemSettings": "系統設定",
     "delayList": "延遲清單",
@@ -206,6 +215,13 @@
     "rateSeries": "出勤率",
     "countChartTitle": "出勤人數",
     "countAxis": "出勤人數"
+  },
+  "abnormalHistory": {
+    "startDate": "統計開始日期",
+    "endDate": "統計結束日期",
+    "missingRange": "請先選擇統計開始日期與結束日期。",
+    "invalidRange": "結束日期不可早於開始日期。",
+    "loadFailed": "查詢失敗：{error}"
   },
   "actions": {
     "saveDailyReport": "💾 儲存日報",

@@ -71,7 +71,7 @@ def start_modern_ui():
         
         # 創建主視窗
         root = tk.Tk()
-        root.title("電子交接系統 v2.1")
+        root.title("電子交接系統 v2.2")
         root.geometry("1300x800")
         
         # 設置高 DPI 支援
@@ -113,7 +113,7 @@ def start_modern_ui():
 def main():
     """主函數"""
     print("=" * 70)
-    print("電子交接系統 - 現代化版本 v2.1")
+    print("電子交接系統 - 現代化版本 v2.2")
     print("=" * 70)
     print()
     

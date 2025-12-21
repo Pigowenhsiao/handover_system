@@ -392,6 +392,7 @@ class ModernMainFrame:
             ('equipment', '⚙️', "navigation.equipment", "設備異常"),
             ('lot', '📦', "navigation.lot", "異常批次"),
             ('summary', '📊', "navigation.summary", "總結"),
+            ('abnormal_history', '🗂️', "navigation.abnormalHistory", "異常歷史"),
             ('delay_list', '⏱️', "navigation.delayList", "延遲清單"),
             ('summary_actual', '🧾', "navigation.summaryActual", "Summary Actual"),
             ('admin', '⚙️', "navigation.admin", "系統管理")
@@ -528,6 +529,8 @@ class ModernMainFrame:
             self.create_lot_page()
         elif page_id == 'summary':
             self.create_summary_page()
+        elif page_id == 'abnormal_history':
+            self.create_abnormal_history_page()
         elif page_id == 'delay_list':
             self.create_delay_list_page()
         elif page_id == 'summary_actual':
@@ -724,6 +727,46 @@ class ModernMainFrame:
         self.shift_code_map = code_map
         self.shift_display_map = display_map
         return display_values
+
+    def _get_month_date_range(self):
+        today = datetime.now().date()
+        start = today.replace(day=1)
+        return start.strftime("%Y-%m-%d"), today.strftime("%Y-%m-%d")
+
+    def _format_shift_display(self, shift_code):
+        if not shift_code:
+            return ""
+        self._load_shift_area_options()
+        self._build_shift_display_options()
+        return self.shift_display_map.get(shift_code, shift_code)
+
+    def _update_abnormal_filter_options(self):
+        if not hasattr(self, "abnormal_shift_combo") or not hasattr(self, "abnormal_area_combo"):
+            return
+        if not self.abnormal_shift_combo.winfo_exists() or not self.abnormal_area_combo.winfo_exists():
+            return
+        self._load_shift_area_options()
+        all_labels = {"全部", "All", "すべて"}
+
+        current_display = self.abnormal_shift_var.get().strip()
+        current_code = None
+        if current_display and current_display not in all_labels:
+            current_code = self.shift_code_map.get(current_display, current_display)
+
+        shift_values = self._build_shift_display_options()
+        all_label = self._t("common.all", "全部")
+        self.abnormal_shift_combo["values"] = [all_label] + shift_values
+        if current_code and current_code in self.shift_display_map:
+            self.abnormal_shift_var.set(self.shift_display_map[current_code])
+        else:
+            self.abnormal_shift_var.set(all_label)
+
+        current_area = self.abnormal_area_var.get().strip()
+        self.abnormal_area_combo["values"] = [all_label] + self.area_options
+        if current_area in self.area_options:
+            self.abnormal_area_var.set(current_area)
+        else:
+            self.abnormal_area_var.set(all_label)
 
     def _create_date_picker(self, parent, var, width=16):
         entry = ttk.Entry(parent, textvariable=var, style='Modern.TEntry', width=width, state='readonly')
@@ -1018,12 +1061,9 @@ class ModernMainFrame:
         self._register_text(hint_label, "summaryDashboard.hint", "選擇日期區間後按下確定以產生統計結果", scope="page")
         hint_label.grid(row=1, column=0, columnspan=5, sticky='w')
 
-        report_date = self.report_context.get("date")
-        if report_date:
-            if not self.summary_dash_start_var.get():
-                self.summary_dash_start_var.set(report_date)
-            if not self.summary_dash_end_var.get():
-                self.summary_dash_end_var.set(report_date)
+        start_default, end_default = self._get_month_date_range()
+        self.summary_dash_start_var.set(start_default)
+        self.summary_dash_end_var.set(end_default)
 
         table_card = self.create_card(self.summary_scroll_frame, '📋', "cards.attendanceTable", "出勤統計表")
         table_card.pack(fill='both', expand=True, pady=(0, 20))
@@ -1077,6 +1117,160 @@ class ModernMainFrame:
         self.summary_bar_canvas = None
         self.summary_dashboard_data = None
         self._render_summary_charts(None)
+
+    def create_abnormal_history_page(self):
+        """創建異常歷史查詢頁面"""
+        self._register_text(self.page_title, "pages.abnormalHistory.title", "異常歷史查詢", scope="page")
+        self._register_text(self.page_subtitle, "pages.abnormalHistory.subtitle", "查詢設備異常與異常批次歷史", scope="page")
+
+        self._abnormal_scroll_setup()
+        control_card = self.create_card(self.abnormal_scroll_frame, '🗂️', "cards.abnormalHistorySearch", "異常歷史查詢")
+        control_card.pack(fill='x', pady=(0, 20))
+
+        control_frame = ttk.Frame(control_card, style='Card.TFrame')
+        control_frame.pack(fill='x', padx=self.layout["card_pad"], pady=self.layout["card_pad"])
+
+        start_label = ttk.Label(control_frame, font=('Segoe UI', 10))
+        self._register_text(start_label, "abnormalHistory.startDate", "統計開始日期", scope="page")
+        start_label.grid(row=0, column=0, sticky='w', pady=self.layout["row_pad"])
+        self.abnormal_start_var = tk.StringVar()
+        start_frame = ttk.Frame(control_frame, style='Card.TFrame')
+        start_frame.grid(row=0, column=1, sticky='w', padx=(self.layout["field_gap"], 0), pady=self.layout["row_pad"])
+        self._create_date_picker(start_frame, self.abnormal_start_var, width=14)
+
+        end_label = ttk.Label(control_frame, font=('Segoe UI', 10))
+        self._register_text(end_label, "abnormalHistory.endDate", "統計結束日期", scope="page")
+        end_label.grid(row=0, column=2, sticky='w', padx=(20, 0), pady=self.layout["row_pad"])
+        self.abnormal_end_var = tk.StringVar()
+        end_frame = ttk.Frame(control_frame, style='Card.TFrame')
+        end_frame.grid(row=0, column=3, sticky='w', padx=(self.layout["field_gap"], 0), pady=self.layout["row_pad"])
+        self._create_date_picker(end_frame, self.abnormal_end_var, width=14)
+
+        search_btn = ttk.Button(control_frame, style='Primary.TButton', command=self._load_abnormal_history)
+        self._register_text(search_btn, "common.search", "搜尋", scope="page")
+        search_btn.grid(row=0, column=4, padx=(20, 0), pady=self.layout["row_pad"])
+
+        shift_label = ttk.Label(control_frame, font=('Segoe UI', 10))
+        self._register_text(shift_label, "fields.shift", "⏰ 班別:", scope="page")
+        shift_label.grid(row=1, column=0, sticky='w', pady=self.layout["row_pad"])
+        self.abnormal_shift_var = tk.StringVar()
+        self.abnormal_shift_combo = ttk.Combobox(control_frame, textvariable=self.abnormal_shift_var, state='readonly', width=16)
+        self.abnormal_shift_combo.grid(row=1, column=1, sticky='w', padx=(self.layout["field_gap"], 0), pady=self.layout["row_pad"])
+
+        area_label = ttk.Label(control_frame, font=('Segoe UI', 10))
+        self._register_text(area_label, "fields.area", "🏭 區域:", scope="page")
+        area_label.grid(row=1, column=2, sticky='w', padx=(20, 0), pady=self.layout["row_pad"])
+        self.abnormal_area_var = tk.StringVar()
+        self.abnormal_area_combo = ttk.Combobox(control_frame, textvariable=self.abnormal_area_var, state='readonly', width=16)
+        self.abnormal_area_combo.grid(row=1, column=3, sticky='w', padx=(self.layout["field_gap"], 0), pady=self.layout["row_pad"])
+
+        start_default, end_default = self._get_month_date_range()
+        self.abnormal_start_var.set(start_default)
+        self.abnormal_end_var.set(end_default)
+        self._update_abnormal_filter_options()
+
+        equipment_card = self.create_card(self.abnormal_scroll_frame, '⚙️', "cards.abnormalEquipmentHistory", "設備異常歷史")
+        equipment_card.pack(fill='both', expand=True, pady=(0, 20))
+
+        equipment_frame = ttk.Frame(equipment_card, style='Card.TFrame')
+        equipment_frame.pack(fill='both', expand=True, padx=self.layout["card_pad"], pady=self.layout["card_pad"])
+
+        eq_cols = (
+            "date",
+            "shift",
+            "area",
+            "author",
+            "equip_id",
+            "description",
+            "start_time",
+            "impact_qty",
+            "action_taken",
+            "image_path",
+        )
+        self.abnormal_equipment_columns = eq_cols
+        self.abnormal_equipment_header_keys = [
+            ("common.date", "日期"),
+            ("common.shift", "班別"),
+            ("common.area", "區域"),
+            ("common.author", "填寫者"),
+            ("equipment.equipId", "設備號碼"),
+            ("common.description", "異常內容"),
+            ("equipment.startTime", "發生時刻"),
+            ("equipment.impactQty", "影響數量"),
+            ("equipment.actionTaken", "對應內容"),
+            ("common.image", "異常圖片"),
+        ]
+
+        self.abnormal_equipment_tree = ttk.Treeview(equipment_frame, columns=eq_cols, show="headings", height=8)
+        self._update_abnormal_history_headers()
+        self.abnormal_equipment_tree.pack(side='left', fill='both', expand=True)
+        eq_scroll = ttk.Scrollbar(equipment_frame, orient="vertical", command=self.abnormal_equipment_tree.yview)
+        self.abnormal_equipment_tree.configure(yscrollcommand=eq_scroll.set)
+        eq_scroll.pack(side="right", fill="y")
+
+        lot_card = self.create_card(self.abnormal_scroll_frame, '📦', "cards.abnormalLotHistory", "異常批次歷史")
+        lot_card.pack(fill='both', expand=True)
+
+        lot_frame = ttk.Frame(lot_card, style='Card.TFrame')
+        lot_frame.pack(fill='both', expand=True, padx=self.layout["card_pad"], pady=self.layout["card_pad"])
+
+        lot_cols = (
+            "date",
+            "shift",
+            "area",
+            "author",
+            "lot_id",
+            "description",
+            "status",
+            "notes",
+        )
+        self.abnormal_lot_columns = lot_cols
+        self.abnormal_lot_header_keys = [
+            ("common.date", "日期"),
+            ("common.shift", "班別"),
+            ("common.area", "區域"),
+            ("common.author", "填寫者"),
+            ("lot.lotId", "批號"),
+            ("common.description", "異常內容"),
+            ("lot.status", "處置狀況"),
+            ("lot.notes", "特記事項"),
+        ]
+
+        self.abnormal_lot_tree = ttk.Treeview(lot_frame, columns=lot_cols, show="headings", height=8)
+        self._update_abnormal_history_headers()
+        self.abnormal_lot_tree.pack(side='left', fill='both', expand=True)
+        lot_scroll = ttk.Scrollbar(lot_frame, orient="vertical", command=self.abnormal_lot_tree.yview)
+        self.abnormal_lot_tree.configure(yscrollcommand=lot_scroll.set)
+        lot_scroll.pack(side="right", fill="y")
+
+        self._load_abnormal_history()
+
+    def _abnormal_scroll_setup(self):
+        self.abnormal_scroll_canvas = tk.Canvas(
+            self.page_content,
+            background=self.COLORS['background'],
+            highlightthickness=0
+        )
+        self.abnormal_scroll_canvas.pack(side="left", fill="both", expand=True)
+        scroll = ttk.Scrollbar(self.page_content, orient="vertical", command=self.abnormal_scroll_canvas.yview)
+        scroll.pack(side="right", fill="y")
+        self.abnormal_scroll_canvas.configure(yscrollcommand=scroll.set)
+        self.abnormal_scroll_frame = ttk.Frame(self.abnormal_scroll_canvas, style='Modern.TFrame')
+        self.abnormal_scroll_window = self.abnormal_scroll_canvas.create_window(
+            (0, 0),
+            window=self.abnormal_scroll_frame,
+            anchor="nw"
+        )
+
+        def _on_frame_config(_event):
+            self.abnormal_scroll_canvas.configure(scrollregion=self.abnormal_scroll_canvas.bbox("all"))
+
+        def _on_canvas_config(event):
+            self.abnormal_scroll_canvas.itemconfigure(self.abnormal_scroll_window, width=event.width)
+
+        self.abnormal_scroll_frame.bind("<Configure>", _on_frame_config)
+        self.abnormal_scroll_canvas.bind("<Configure>", _on_canvas_config)
+        self._bind_canvas_mousewheel(self.abnormal_scroll_frame, self.abnormal_scroll_canvas)
 
     def _summary_scroll_setup(self):
         self.summary_scroll_canvas = tk.Canvas(
@@ -1154,6 +1348,50 @@ class ModernMainFrame:
         }
         for col in self.summary_dash_columns:
             self.summary_dash_tree.column(col, width=widths.get(col, 100), stretch=(col == "notes"), anchor=anchors.get(col, "center"))
+
+    def _update_abnormal_history_headers(self):
+        if hasattr(self, "abnormal_equipment_tree"):
+            for col, (key, default) in zip(self.abnormal_equipment_columns, self.abnormal_equipment_header_keys):
+                self.abnormal_equipment_tree.heading(col, text=self._t(key, default))
+            widths = {
+                "date": 100,
+                "shift": 80,
+                "area": 110,
+                "author": 120,
+                "equip_id": 110,
+                "description": 200,
+                "start_time": 100,
+                "impact_qty": 80,
+                "action_taken": 180,
+                "image_path": 160,
+            }
+            for col in self.abnormal_equipment_columns:
+                self.abnormal_equipment_tree.column(
+                    col,
+                    width=widths.get(col, 100),
+                    stretch=col in ("description", "action_taken", "image_path"),
+                    anchor="w" if col in ("description", "action_taken", "image_path") else "center",
+                )
+        if hasattr(self, "abnormal_lot_tree"):
+            for col, (key, default) in zip(self.abnormal_lot_columns, self.abnormal_lot_header_keys):
+                self.abnormal_lot_tree.heading(col, text=self._t(key, default))
+            widths = {
+                "date": 100,
+                "shift": 80,
+                "area": 110,
+                "author": 120,
+                "lot_id": 100,
+                "description": 200,
+                "status": 140,
+                "notes": 180,
+            }
+            for col in self.abnormal_lot_columns:
+                self.abnormal_lot_tree.column(
+                    col,
+                    width=widths.get(col, 100),
+                    stretch=col in ("description", "status", "notes"),
+                    anchor="w" if col in ("description", "status", "notes") else "center",
+                )
 
     def _build_attendance_notes(self, regular_reason, contract_reason):
         parts = []
@@ -1307,6 +1545,126 @@ class ModernMainFrame:
             messagebox.showerror(
                 self._t("common.error", "錯誤"),
                 self._t("summaryDashboard.loadFailed", "統計載入失敗：{error}").format(error=exc)
+            )
+
+    def _load_abnormal_history(self):
+        if not hasattr(self, "abnormal_equipment_tree") or not hasattr(self, "abnormal_lot_tree"):
+            return
+        self._clear_tree(self.abnormal_equipment_tree)
+        self._clear_tree(self.abnormal_lot_tree)
+
+        start = self.abnormal_start_var.get().strip()
+        end = self.abnormal_end_var.get().strip()
+        if not start or not end:
+            messagebox.showwarning(
+                self._t("common.warning", "提醒"),
+                self._t("abnormalHistory.missingRange", "請先選擇統計開始日期與結束日期。")
+            )
+            return
+        try:
+            start_date = datetime.strptime(start, "%Y-%m-%d").date()
+            end_date = datetime.strptime(end, "%Y-%m-%d").date()
+        except ValueError:
+            messagebox.showwarning(
+                self._t("common.warning", "提醒"),
+                self._t("errors.invalidDateFormat", "日期格式需為 YYYY-MM-DD")
+            )
+            return
+        if end_date < start_date:
+            messagebox.showwarning(
+                self._t("common.warning", "提醒"),
+                self._t("abnormalHistory.invalidRange", "結束日期不可早於開始日期。")
+            )
+            return
+
+        try:
+            with SessionLocal() as db:
+                all_label = self._t("common.all", "全部")
+                shift_display = self.abnormal_shift_var.get().strip()
+                area_value = self.abnormal_area_var.get().strip()
+                shift_code = None
+                if shift_display and shift_display not in {"全部", "All", "すべて", all_label}:
+                    shift_code = self.shift_code_map.get(shift_display, shift_display)
+                if area_value in {"全部", "All", "すべて", all_label}:
+                    area_value = None
+
+                equipment_query = (
+                    db.query(EquipmentLog)
+                    .join(DailyReport)
+                    .options(joinedload(EquipmentLog.report).joinedload(DailyReport.author))
+                    .filter(DailyReport.date >= start_date, DailyReport.date <= end_date)
+                )
+                if shift_code:
+                    equipment_query = equipment_query.filter(DailyReport.shift == shift_code)
+                if area_value:
+                    equipment_query = equipment_query.filter(DailyReport.area == area_value)
+                equipment_rows = equipment_query.order_by(DailyReport.date.desc(), DailyReport.area, EquipmentLog.id).all()
+
+                lot_query = (
+                    db.query(LotLog)
+                    .join(DailyReport)
+                    .options(joinedload(LotLog.report).joinedload(DailyReport.author))
+                    .filter(DailyReport.date >= start_date, DailyReport.date <= end_date)
+                )
+                if shift_code:
+                    lot_query = lot_query.filter(DailyReport.shift == shift_code)
+                if area_value:
+                    lot_query = lot_query.filter(DailyReport.area == area_value)
+                lot_rows = lot_query.order_by(DailyReport.date.desc(), DailyReport.area, LotLog.id).all()
+
+            for row in equipment_rows:
+                report = row.report
+                if not report:
+                    continue
+                shift_display = self._format_shift_display(report.shift)
+                author_name = report.author.username if report.author else ""
+                self.abnormal_equipment_tree.insert(
+                    "",
+                    "end",
+                    values=(
+                        report.date.strftime("%Y-%m-%d"),
+                        shift_display,
+                        report.area,
+                        author_name,
+                        row.equip_id,
+                        row.description,
+                        row.start_time,
+                        row.impact_qty,
+                        row.action_taken,
+                        row.image_path or "",
+                    ),
+                )
+
+            for row in lot_rows:
+                report = row.report
+                if not report:
+                    continue
+                shift_display = self._format_shift_display(report.shift)
+                author_name = report.author.username if report.author else ""
+                self.abnormal_lot_tree.insert(
+                    "",
+                    "end",
+                    values=(
+                        report.date.strftime("%Y-%m-%d"),
+                        shift_display,
+                        report.area,
+                        author_name,
+                        row.lot_id,
+                        row.description,
+                        row.status,
+                        row.notes,
+                    ),
+                )
+
+            if not equipment_rows and not lot_rows:
+                messagebox.showinfo(
+                    self._t("common.info", "資訊"),
+                    self._t("common.emptyData", "查無資料")
+                )
+        except Exception as exc:
+            messagebox.showerror(
+                self._t("common.error", "錯誤"),
+                self._t("abnormalHistory.loadFailed", "查詢失敗：{error}").format(error=exc)
             )
 
     def _ensure_cjk_font(self):
@@ -1856,10 +2214,12 @@ class ModernMainFrame:
             self.admin_trans_mgmt.update_ui_language()
         if hasattr(self, "admin_master_data"):
             self.admin_master_data.update_ui_language()
+        self._update_abnormal_filter_options()
         self._update_shift_values()
         self._sync_report_context_from_form()
         self._update_delay_headers()
         self._update_summary_dashboard_headers()
+        self._update_abnormal_history_headers()
         self._update_summary_headers()
         if self.current_page == "summary" and self.summary_dashboard_data:
             self._render_summary_charts(self.summary_dashboard_data)
@@ -1931,6 +2291,7 @@ class ModernMainFrame:
                 self.area_var.set(current_area)
             elif self.area_options:
                 self.area_var.set(self.area_options[0])
+        self._update_abnormal_filter_options()
     
     def add_equipment_record(self):
         """添加設備記錄"""

@@ -5,7 +5,7 @@
     "login": "Login",
     "logout": "Logout",
     "subtitle": "Handover Management System",
-    "version": "Version 2.1"
+    "version": "Version 2.2"
   },
   "navigation": {
     "home": "Home",
@@ -18,6 +18,7 @@
     "equipment": "Equipment",
     "lot": "Lot Issues",
     "summary": "Summary",
+    "abnormalHistory": "Abnormal History",
     "masterData": "Master Data Management",
     "delayList": "Delay List",
     "summaryActual": "Summary Actual"
@@ -90,7 +91,8 @@
     "emptyData": "No data found",
     "uploadSuccess": "Upload successful",
     "selectRow": "Please select a row",
-    "selectDate": "Select date"
+    "selectDate": "Select date",
+    "all": "All"
   },
   "reports": {
     "title": "Daily Report",
@@ -147,6 +149,10 @@
       "title": "Attendance Summary",
       "subtitle": "Aggregate attendance by date range"
     },
+    "abnormalHistory": {
+      "title": "Abnormal History",
+      "subtitle": "Query equipment and lot history"
+    },
     "admin": {
       "title": "System Admin",
       "subtitle": "Manage users, translations, and settings"
@@ -170,6 +176,9 @@
     "attendanceSummary": "Attendance Summary",
     "attendanceTable": "Attendance Table",
     "attendanceCharts": "Attendance Charts",
+    "abnormalHistorySearch": "Abnormal History",
+    "abnormalEquipmentHistory": "Equipment History",
+    "abnormalLotHistory": "Lot History",
     "databaseSettings": "Database Settings",
     "systemSettings": "System Settings",
     "delayList": "Delay List",
@@ -206,6 +215,13 @@
     "rateSeries": "Attendance Rate",
     "countChartTitle": "Attendance Count",
     "countAxis": "Attendance Count"
+  },
+  "abnormalHistory": {
+    "startDate": "Start Date",
+    "endDate": "End Date",
+    "missingRange": "Please select both start and end dates.",
+    "invalidRange": "End date cannot be earlier than start date.",
+    "loadFailed": "Query failed: {error}"
   },
   "actions": {
     "saveDailyReport": "💾 Save Report",
