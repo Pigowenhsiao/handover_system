@@ -219,6 +219,8 @@ class ModernMainFrame:
             self.user_info_label.configure(foreground=colors['text_secondary'], background=colors['surface'])
         if hasattr(self, "status_label"):
             self.status_label.configure(foreground=colors['text_secondary'], background=colors['surface'])
+        if hasattr(self, "status_info_label"):
+            self.status_info_label.configure(foreground=colors['text_secondary'], background=colors['surface'])
         if hasattr(self, "sidebar_title"):
             self.sidebar_title.configure(background=colors['sidebar'], foreground='white')
         if hasattr(self, "sidebar_version_label"):
@@ -712,12 +714,30 @@ class ModernMainFrame:
         )
         self.status_label.pack(side='left', padx=20)
         self._set_status("status.ready", "就緒")
-        
+
+        self.status_info_label = ttk.Label(
+            self.status_frame,
+            font=('Segoe UI', 9),
+            foreground=self.COLORS['text_secondary'],
+            background=self.COLORS['surface']
+        )
+        self.status_info_label.pack(side='right', padx=(0, 10))
+        self._update_status_bar_info()
+
         # 狀態指示器
         self.status_indicator = tk.Canvas(self.status_frame, width=12, height=12, highlightthickness=0)
         self._register_canvas_widget(self.status_indicator, "surface")
         self.status_indicator_id = self.status_indicator.create_oval(1, 1, 11, 11, fill=self.COLORS['success'], outline="")
         self.status_indicator.pack(side='right', padx=20)
+
+    def _update_status_bar_info(self):
+        if not hasattr(self, "status_info_label"):
+            return
+        version_text = self._t("header.version", "Version 2.2")
+        db_label = self._t("settings.databasePath", "Database Path:")
+        db_path = str(get_database_path())
+        info_text = f"{version_text} | {db_label} {db_path} | Create by Pigo Hsiao"
+        self.status_info_label.config(text=info_text)
     
     def show_page(self, page_id):
         """顯示指定頁面"""
@@ -2497,6 +2517,7 @@ class ModernMainFrame:
         if self.current_page == "summary" and self.summary_dashboard_data:
             self._render_summary_charts(self.summary_dashboard_data)
         self._update_report_context_label()
+        self._update_status_bar_info()
         self.status_label.config(text=self._t("status.languageChanged", "🌐 語言已切換至: {language}").format(language=current_lang_name))
         self.update_nav_text()
     
