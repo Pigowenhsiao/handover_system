@@ -2,7 +2,7 @@
 
 ## 1. 系統型態
 - 單機桌面版 (tkinter)
-- SQLite 本機資料庫 (`handover_system.db`)
+- SQLite 本機資料庫 (`data/handover_system.db`)
 - 多語言 JSON 資源 (`frontend/public/locales/*.json`)
 
 ## 2. 已完成功能
@@ -23,3 +23,4 @@
 ## 4. 文件對齊
 - 主要文件已更新至 v2.2
 - 規格、計畫、設計、使用手冊已同步現況
+

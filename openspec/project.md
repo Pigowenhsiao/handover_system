@@ -74,7 +74,8 @@
 ## Important Constraints
 - 不使用網路存取或雲端服務，所有資源需本機可用。
 - 維持 Python 3.9+ 相容；避免需要編譯或平台特定依賴。
-- 介面與資料庫檔案須放在同一目錄以確保可移植性（預設 `handover_system.db`）。
+- 介面與資料庫檔案需放在同一專案根目錄下，資料庫存放於 `data/handover_system.db` 以確保可移植性。
 
 ## External Dependencies
 - 無外部 API 或服務；依賴本機套件：SQLAlchemy、pandas、openpyxl、matplotlib、bcrypt（Tkinter 為 Python 內建）。
+

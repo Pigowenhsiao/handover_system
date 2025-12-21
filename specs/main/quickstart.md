@@ -19,5 +19,6 @@ python run_modern_system.py
 3. 進行出勤、設備異常、異常批次、總結與歷史查詢
 
 ## 資料與設定
-- SQLite：`handover_system.db`
+- SQLite：`data/handover_system.db`
 - 系統設定：`handover_settings.json`
+

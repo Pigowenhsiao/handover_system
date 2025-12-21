@@ -21,4 +21,5 @@
 ## 4. 維護重點
 - 規格文件需與實際行為同步更新
 - 翻譯資源匯入/匯出後須確認語言檔一致
-- 定期備份 `handover_system.db` 與 `handover_settings.json`
+- 定期備份 `data/handover_system.db` 與 `handover_settings.json`
+

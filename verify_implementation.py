@@ -66,11 +66,11 @@ for spec_dir in spec_directories:
 
 # 檢查資料庫檔案
 print("\n檢查資料庫檔案...")
-db_path = os.path.join(root_dir, "handover_system.db")
-if os.path.exists(db_path):
-    print("✓ handover_system.db 存在")
+db_path = root_dir / "data" / "handover_system.db"
+if db_path.exists():
+    print("✓ data/handover_system.db 存在")
 else:
-    print("ℹ handover_system.db 尚未建立（首次啟動會自動建立）")
+    print("ℹ data/handover_system.db 尚未建立（首次啟動會自動建立）")
 
 # 檢查語言資源文件
 print("\n檢查語言資源文件...")

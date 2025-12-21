@@ -1,5 +1,5 @@
 {
   "auto_backup": true,
   "backup_interval_days": 365,
-  "theme": "light"
+  "theme": "dark"
 }

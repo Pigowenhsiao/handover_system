@@ -2,7 +2,7 @@
 
 ## 1. 系統概述
 
-電子交接本為單機桌面應用程式（Tkinter），支援中/英/日語切換，資料儲存於本機 SQLite（`handover_system.db`），不需網路或伺服器。
+電子交接本為單機桌面應用程式（Tkinter），支援中/英/日語切換，資料儲存於本機 SQLite（`data/handover_system.db`），不需網路或伺服器。
 
 ## 2. 安裝與啟動
 
@@ -37,4 +37,5 @@
 ## 5. 設定與備份
 
 - 系統設定（備份間隔）保存在 `handover_settings.json`
-- 建議定期備份 `handover_system.db`
+- 建議定期備份 `data/handover_system.db`
+

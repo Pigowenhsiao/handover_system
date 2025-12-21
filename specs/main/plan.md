@@ -21,7 +21,7 @@ handover_system/
 │   └── src/
 │       └── components/           # Tkinter UI 元件
 ├── frontend/public/locales/      # 多語資源
-├── handover_system.db            # SQLite 資料庫（執行後產生）
+├── data/handover_system.db            # SQLite 資料庫（執行後產生）
 └── handover_settings.json        # 系統設定（執行後產生）
 ```
 
@@ -31,3 +31,4 @@ handover_system/
 - 總結頁改為出勤統計（表格 + 圖表）已完成
 - 異常歷史查詢（雙表格 + 篩選）已完成
 - 管理功能（使用者/翻譯/班別/區域）已完成
+

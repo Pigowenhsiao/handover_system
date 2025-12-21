@@ -84,4 +84,5 @@
 ## 5. 部署考量
 - PyInstaller 打包
 - 首次啟動初始化資料庫與管理員
-- 保留 `handover_system.db` 與 `handover_settings.json`
+- 保留 `data/handover_system.db` 與 `handover_settings.json`
+

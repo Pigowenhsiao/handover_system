@@ -1,12 +1,56 @@
 from __future__ import annotations
 
 from datetime import datetime, date
+from pathlib import Path
+import sys
+import shutil
 from typing import Generator, Optional
 
 from sqlalchemy import Column, Integer, String, Date, DateTime, Text, ForeignKey, create_engine
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker, Session
 
-DATABASE_URL = "sqlite:///handover_system.db"
+def _get_app_root() -> Path:
+    if getattr(sys, "frozen", False):
+        return Path(sys.executable).resolve().parent
+    return Path(__file__).resolve().parent
+
+
+def _get_data_dir() -> Path:
+    data_dir = _get_app_root() / "data"
+    data_dir.mkdir(parents=True, exist_ok=True)
+    return data_dir
+
+
+def get_database_path() -> Path:
+    db_path = _get_data_dir() / "handover_system.db"
+    _maybe_migrate_database(db_path)
+    return db_path
+
+
+def _maybe_migrate_database(target_path: Path) -> None:
+    if target_path.exists():
+        return
+
+    legacy_paths = [_get_app_root() / "handover_system.db"]
+    legacy_base = getattr(sys, "_MEIPASS", None)
+    if legacy_base:
+        legacy_paths.append(Path(legacy_base) / "handover_system.db")
+
+    for legacy_path in legacy_paths:
+        if not legacy_path.exists():
+            continue
+        try:
+            shutil.move(str(legacy_path), str(target_path))
+        except Exception:
+            try:
+                shutil.copy2(str(legacy_path), str(target_path))
+            except Exception:
+                pass
+        break
+
+
+DATABASE_PATH = get_database_path()
+DATABASE_URL = f"sqlite:///{DATABASE_PATH.as_posix()}"
 
 engine = create_engine(
     DATABASE_URL,

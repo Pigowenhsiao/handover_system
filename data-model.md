@@ -1,6 +1,6 @@
 # 數據模型 (Data Model)
 
-本系統為單機桌面版，資料儲存在 SQLite (`handover_system.db`)。
+本系統為單機桌面版，資料儲存在 SQLite (`data/handover_system.db`)。
 
 ## 1. 使用者 (users)
 - **id** (INTEGER, PK)
@@ -91,3 +91,4 @@
 ## 11. 關聯摘要
 - users 1 → N daily_reports
 - daily_reports 1 → N attendance_entries / equipment_logs / lot_logs
+

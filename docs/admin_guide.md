@@ -17,7 +17,8 @@
 ## 4. 系統設定
 - 設定 **自動備份** 與 **備份間隔 (天)**。
 - 設定值保存於 `handover_settings.json`。
-- 若需要實際備份排程，請搭配外部排程或手動備份 `handover_system.db`。
+- 若需要實際備份排程，請搭配外部排程或手動備份 `data/handover_system.db`。
 
 ## 5. 版本一致性
 - 標題列與左下角版次需一致，版本以 `frontend/public/locales/*.json` 為準。
+

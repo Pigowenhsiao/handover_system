@@ -32,6 +32,7 @@ from models import (
     LotLog,
     ShiftOption,
     AreaOption,
+    get_database_path,
 )
 
 
@@ -2288,7 +2289,7 @@ class ModernMainFrame:
         db_path_frame = ttk.Frame(db_card, style='Card.TFrame')
         db_path_frame.pack(fill='x', padx=20, pady=(0, 15))
         
-        self.db_path_var = tk.StringVar(value='handover_system.db')
+        self.db_path_var = tk.StringVar(value=str(get_database_path()))
         ttk.Entry(db_path_frame, textvariable=self.db_path_var, width=50, state='readonly', style='Modern.TEntry').pack(side='left', padx=(0, 10))
         browse_btn = ttk.Button(db_path_frame, style='Accent.TButton')
         self._register_text(browse_btn, "common.browse", "瀏覽...", scope="page")

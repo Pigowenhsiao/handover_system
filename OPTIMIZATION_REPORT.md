@@ -425,7 +425,7 @@ handover_system/
 │   └── test_modern_ui.py           # ✅ UI 測試
 ├── start_modern_ui.py              # ✅ 現代化啟動器
 ├── run_modern_system.py            # ✅ 完整系統啟動器
-└── handover_system.db              # 資料庫檔案
+└── data/handover_system.db              # 資料庫檔案
 ```
 
 ### 系統需求
@@ -535,3 +535,4 @@ pip install -r requirements.txt
 **報告生成時間**: 2025-12-10 02:30:00
 **報告生成者**: AI Assistant
 **專案狀態**: ✅ 已完成
+
