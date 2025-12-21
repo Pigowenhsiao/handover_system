@@ -42,18 +42,105 @@ class AttendanceSectionOptimized:
     
     def setup_styles(self):
         """設置自定義樣式"""
+        self.apply_theme()
+
+    def _get_theme_colors(self):
+        if self.app_instance and hasattr(self.app_instance, "COLORS"):
+            return self.app_instance.COLORS
+        return {
+            "primary": "#1976D2",
+            "success": "#4CAF50",
+            "warning": "#FF9800",
+            "error": "#F44336",
+            "text_primary": "#212121",
+            "text_secondary": "#757575",
+            "surface": "#FFFFFF",
+        }
+
+    def _is_dark_theme(self):
+        return getattr(self.app_instance, "theme_mode", "light") == "dark"
+
+    def _apply_styles(self):
         style = ttk.Style()
-        
-        # 定義顏色方案
-        style.configure("Good.TFrame", background="#e8f5e9")
-        style.configure("Warning.TFrame", background="#fff3e0")
-        style.configure("Danger.TFrame", background="#ffebee")
-        
-        style.configure("Good.TLabel", background="#e8f5e9", foreground="#2e7d32")
-        style.configure("Warning.TLabel", background="#fff3e0", foreground="#ef6c00")
-        style.configure("Danger.TLabel", background="#ffebee", foreground="#c62828")
-        
-        style.configure("Modified.TEntry", fieldbackground="#fff9c4")
+        colors = self._get_theme_colors()
+
+        if self._is_dark_theme():
+            good_bg = "#1f2b1f"
+            warning_bg = "#332414"
+            danger_bg = "#2d1b1b"
+            modified_bg = "#3d3a1a"
+            good_fg = colors["success"]
+            warning_fg = colors["warning"]
+            danger_fg = colors["error"]
+        else:
+            good_bg = "#e8f5e9"
+            warning_bg = "#fff3e0"
+            danger_bg = "#ffebee"
+            modified_bg = "#fff9c4"
+            good_fg = "#2e7d32"
+            warning_fg = "#ef6c00"
+            danger_fg = "#c62828"
+
+        style.configure("Good.TFrame", background=good_bg)
+        style.configure("Warning.TFrame", background=warning_bg)
+        style.configure("Danger.TFrame", background=danger_bg)
+
+        style.configure("Good.TLabel", background=good_bg, foreground=good_fg)
+        style.configure("Warning.TLabel", background=warning_bg, foreground=warning_fg)
+        style.configure("Danger.TLabel", background=danger_bg, foreground=danger_fg)
+
+        style.configure("Modified.TEntry", fieldbackground=modified_bg)
+        style.configure("Save.TButton", font=("TkDefaultFont", 10, "bold"), background=colors["success"], foreground="white")
+
+    def apply_theme(self):
+        self._apply_styles()
+        colors = self._get_theme_colors()
+        if self._widget_alive(getattr(self, "info_label", None)):
+            self.info_label.configure(foreground=colors.get("text_secondary", "gray"))
+        if self._widget_alive(getattr(self, "total_present_label", None)):
+            self.total_present_label.configure(foreground=colors.get("success", "#4CAF50"))
+        if self._widget_alive(getattr(self, "total_absent_label", None)):
+            self.total_absent_label.configure(foreground=colors.get("error", "#F44336"))
+        if self._widget_alive(getattr(self, "regular_status_canvas", None)):
+            self.regular_status_canvas.configure(background=colors.get("surface", "#FFFFFF"))
+        if self._widget_alive(getattr(self, "contractor_status_canvas", None)):
+            self.contractor_status_canvas.configure(background=colors.get("surface", "#FFFFFF"))
+        self.update_status_indicator()
+        self.calculate_rates()
+
+    def _get_rate_colors(self, rate):
+        colors = self._get_theme_colors()
+        if self._is_dark_theme():
+            if rate >= 90:
+                return colors["success"], colors["success"]
+            if rate >= 80:
+                return colors["warning"], colors["warning"]
+            if rate >= 60:
+                return colors["primary"], colors["primary"]
+            return colors["error"], colors["error"]
+
+        if rate >= 90:
+            return "#2e7d32", "#4caf50"
+        if rate >= 80:
+            return "#f57c00", "#ff9800"
+        if rate >= 60:
+            return "#0288d1", "#03a9f4"
+        return "#c62828", "#f44336"
+
+    def _get_overall_rate_color(self, rate):
+        colors = self._get_theme_colors()
+        if self._is_dark_theme():
+            if rate >= 85:
+                return colors["success"]
+            if rate >= 70:
+                return colors["warning"]
+            return colors["error"]
+
+        if rate >= 85:
+            return "#2e7d32"
+        if rate >= 70:
+            return "#f57c00"
+        return "#c62828"
     
     def setup_ui(self):
         """設置優化版界面"""
@@ -144,9 +231,10 @@ class AttendanceSectionOptimized:
         # 設定按鈕樣式
         try:
             style = ttk.Style()
+            colors = self._get_theme_colors()
             style.configure("Accent.TButton", font=("TkDefaultFont", 10, "bold"))
-            style.configure("Save.TButton", font=("TkDefaultFont", 10, "bold"), background="#4caf50")
-        except:
+            style.configure("Save.TButton", font=("TkDefaultFont", 10, "bold"), background=colors.get("success", "#4caf50"), foreground="white")
+        except Exception:
             pass
     
     def setup_staff_section(self, parent, staff_type):
@@ -323,9 +411,10 @@ class AttendanceSectionOptimized:
     def update_status_indicator(self):
         """更新狀態指示器"""
         if self.data_modified:
+            colors = self._get_theme_colors()
             self.status_label.config(
                 text=self.lang_manager.get_text("attendance.unsaved", "⚠️ 未儲存"),
-                foreground="#ff9800"
+                foreground=colors.get("warning", "#ff9800")
             )
         else:
             self.status_label.config(text="")
@@ -366,19 +455,7 @@ class AttendanceSectionOptimized:
             label = self.contractor_rate_label
             canvas = self.contractor_status_canvas
         
-        # 根據出勤率設定顏色
-        if rate >= 90:
-            color = "#2e7d32"  # 綠色 - 優秀
-            light_color = "#4caf50"
-        elif rate >= 80:
-            color = "#f57c00"  # 橙色 - 良好
-            light_color = "#ff9800"
-        elif rate >= 60:
-            color = "#0288d1"  # 藍色 - 一般
-            light_color = "#03a9f4"
-        else:
-            color = "#c62828"  # 紅色 - 警告
-            light_color = "#f44336"
+        color, light_color = self._get_rate_colors(rate)
         
         label.config(foreground=color)
         
@@ -400,13 +477,7 @@ class AttendanceSectionOptimized:
         overall_rate = (total_present / total_scheduled * 100) if total_scheduled > 0 else 0
         self.overall_rate_label.config(text=f"{overall_rate:.1f}%")
         
-        # 整體出勤率顏色
-        if overall_rate >= 85:
-            self.overall_rate_label.config(foreground="#2e7d32")
-        elif overall_rate >= 70:
-            self.overall_rate_label.config(foreground="#f57c00")
-        else:
-            self.overall_rate_label.config(foreground="#c62828")
+        self.overall_rate_label.config(foreground=self._get_overall_rate_color(overall_rate))
     
     def format_number(self, value):
         """格式化數字（千位分隔符）"""

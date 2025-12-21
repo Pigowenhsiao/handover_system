@@ -41,7 +41,7 @@ class ModernMainFrame:
     採用 Material Design 設計理念
     """
     
-    COLORS = {
+    LIGHT_COLORS = {
         'primary': '#1976D2',      # 主色 - 藍色
         'primary_dark': '#1565C0',
         'primary_light': '#E3F2FD',
@@ -57,6 +57,23 @@ class ModernMainFrame:
         'sidebar': '#2C3E50',      # 側邊欄背景
         'sidebar_active': '#3498DB' # 側邊欄激活項
     }
+    DARK_COLORS = {
+        'primary': '#4C8DFF',
+        'primary_dark': '#1E6BD6',
+        'primary_light': '#90CAF9',
+        'accent': '#FFB74D',
+        'background': '#121212',
+        'surface': '#1E1E1E',
+        'text_primary': '#E6E6E6',
+        'text_secondary': '#B0B0B0',
+        'divider': '#2A2A2A',
+        'success': '#66BB6A',
+        'warning': '#FFA726',
+        'error': '#EF5350',
+        'sidebar': '#111827',
+        'sidebar_active': '#1F2937'
+    }
+    COLORS = LIGHT_COLORS
     
     def __init__(self, parent, lang_manager):
         self.parent = parent
@@ -66,6 +83,11 @@ class ModernMainFrame:
         self._global_i18n = []
         self._page_i18n = []
         self._nav_items = []
+        self.theme_mode = "light"
+        self.COLORS = dict(self.LIGHT_COLORS)
+        ModernMainFrame.COLORS = self.COLORS
+        self._text_widgets = []
+        self._canvas_widgets = []
         self.report_context = {"date": "", "shift": "", "area": ""}
         self.saved_context = {"date": "", "shift": "", "area": ""}
         self.report_is_saved = False
@@ -137,13 +159,152 @@ class ModernMainFrame:
     def _clear_tree(self, tree):
         for item in tree.get_children():
             tree.delete(item)
+
+    def _register_text_widget(self, widget):
+        self._text_widgets.append(widget)
+        self._apply_text_widget_colors(widget)
+
+    def _register_canvas_widget(self, widget, bg_key):
+        self._canvas_widgets.append({"widget": widget, "bg_key": bg_key})
+        widget.configure(background=self.COLORS[bg_key])
+
+    def _apply_text_widget_colors(self, widget):
+        colors = self.COLORS
+        widget.configure(
+            background=colors['surface'],
+            foreground=colors['text_primary'],
+            insertbackground=colors['text_primary'],
+            selectbackground=colors['primary_dark'],
+            selectforeground='white',
+        )
+
+    def _apply_theme_to_fixed_widgets(self):
+        colors = self.COLORS
+        if hasattr(self, "main_title"):
+            self.main_title.configure(foreground=colors['primary'], background=colors['surface'])
+        if hasattr(self, "subtitle"):
+            self.subtitle.configure(foreground=colors['text_secondary'], background=colors['surface'])
+        if hasattr(self, "user_info_label"):
+            self.user_info_label.configure(foreground=colors['text_secondary'], background=colors['surface'])
+        if hasattr(self, "status_label"):
+            self.status_label.configure(foreground=colors['text_secondary'], background=colors['surface'])
+        if hasattr(self, "sidebar_title"):
+            self.sidebar_title.configure(background=colors['sidebar'], foreground='white')
+        if hasattr(self, "sidebar_version_label"):
+            self.sidebar_version_label.configure(background=colors['sidebar'], foreground=colors['text_secondary'])
+        if hasattr(self, "summary_hint_label"):
+            self.summary_hint_label.configure(foreground=colors['text_secondary'])
+
+        for entry in self._canvas_widgets:
+            widget = entry["widget"]
+            if widget.winfo_exists():
+                widget.configure(background=colors[entry["bg_key"]])
+
+        for widget in self._text_widgets:
+            if widget.winfo_exists():
+                self._apply_text_widget_colors(widget)
+
+        if hasattr(self, "status_indicator") and hasattr(self, "status_indicator_id"):
+            self.status_indicator.itemconfigure(self.status_indicator_id, fill=colors['success'])
+
+        if hasattr(self, "summary_pie_canvas") and self.summary_pie_canvas:
+            self.summary_pie_canvas.get_tk_widget().configure(background=colors['surface'])
+        if hasattr(self, "summary_bar_canvas") and self.summary_bar_canvas:
+            self.summary_bar_canvas.get_tk_widget().configure(background=colors['surface'])
+
+        popup = getattr(self, "_calendar_popup", None)
+        if popup is not None and popup.winfo_exists():
+            popup.configure(background=colors['background'])
+
+    def _update_theme_toggle_label(self):
+        if not hasattr(self, "theme_toggle_btn"):
+            return
+        if self.theme_mode == "dark":
+            key = "theme.switchToLight"
+            default = "切換明亮模式"
+        else:
+            key = "theme.switchToDark"
+            default = "切換黑暗模式"
+        self.theme_toggle_btn.configure(text=self._t(key, default))
+
+    def toggle_theme(self):
+        next_theme = "dark" if self.theme_mode == "light" else "light"
+        self.apply_theme(next_theme)
+
+    def apply_theme(self, theme_mode):
+        if theme_mode == self.theme_mode:
+            return
+        if theme_mode not in ("light", "dark"):
+            return
+        self.theme_mode = theme_mode
+        self.COLORS = dict(self.DARK_COLORS if theme_mode == "dark" else self.LIGHT_COLORS)
+        ModernMainFrame.COLORS = self.COLORS
+        self.setup_modern_styles()
+        self._apply_theme_to_fixed_widgets()
+        self._update_theme_toggle_label()
+        if hasattr(self, "attendance_section") and self.attendance_section:
+            self.attendance_section.apply_theme()
+        if self.summary_dashboard_data is not None:
+            self._render_summary_charts(self.summary_dashboard_data)
     
     def setup_modern_styles(self):
         """設置現代化樣式"""
         style = ttk.Style()
+        try:
+            style.theme_use('clam')
+        except tk.TclError:
+            pass
         
         # 配置顏色
         colors = self.COLORS
+
+        # 基礎樣式
+        style.configure('TFrame', background=colors['surface'])
+        style.configure('TLabel', background=colors['surface'], foreground=colors['text_primary'])
+        style.configure('TButton',
+                       background=colors['surface'],
+                       foreground=colors['text_primary'],
+                       padding=(10, 6),
+                       font=('Segoe UI', 9))
+        style.map('TButton',
+                 background=[('active', colors['primary_light']),
+                            ('pressed', colors['primary_dark'])],
+                 foreground=[('active', colors['text_primary'])])
+        style.configure('TEntry',
+                       fieldbackground=colors['surface'],
+                       foreground=colors['text_primary'],
+                       padding=(6, 4))
+        style.configure('TCombobox',
+                       fieldbackground=colors['surface'],
+                       foreground=colors['text_primary'])
+        style.map('TCombobox',
+                 fieldbackground=[('readonly', colors['surface'])],
+                 foreground=[('readonly', colors['text_primary'])])
+        style.configure('TCheckbutton',
+                       background=colors['surface'],
+                       foreground=colors['text_primary'])
+        style.configure('TRadiobutton',
+                       background=colors['surface'],
+                       foreground=colors['text_primary'])
+        style.configure('TLabelframe',
+                       background=colors['surface'],
+                       foreground=colors['text_primary'])
+        style.configure('TLabelframe.Label',
+                       background=colors['surface'],
+                       foreground=colors['text_primary'],
+                       font=('Segoe UI', 10, 'bold'))
+        style.configure('Treeview',
+                       background=colors['surface'],
+                       fieldbackground=colors['surface'],
+                       foreground=colors['text_primary'],
+                       rowheight=24)
+        style.configure('Treeview.Heading',
+                       background=colors['background'],
+                       foreground=colors['text_primary'],
+                       font=('Segoe UI', 9, 'bold'))
+        style.map('Treeview',
+                 background=[('selected', colors['primary_dark'])],
+                 foreground=[('selected', 'white')])
         
         # 框架樣式
         style.configure('Modern.TFrame', background=colors['background'])
@@ -178,6 +339,16 @@ class ModernMainFrame:
                        padding=(15, 12),
                        font=('Segoe UI', 10, 'bold'),
                        anchor='w')
+
+        style.configure('Toolbar.TButton',
+                       background=colors['surface'],
+                       foreground=colors['text_primary'],
+                       padding=(10, 6),
+                       font=('Segoe UI', 9, 'bold'))
+        style.map('Toolbar.TButton',
+                 background=[('active', colors['primary_light']),
+                            ('pressed', colors['primary_dark'])],
+                 foreground=[('active', colors['text_primary'])])
         
         style.map('Sidebar.TButton',
                  background=[('active', colors['sidebar_active']),
@@ -216,10 +387,14 @@ class ModernMainFrame:
                        font=('Segoe UI', 10),
                        padding=(15, 8),
                        background=colors['surface'])
+        style.map('Modern.TNotebook.Tab',
+                 background=[('selected', colors['primary_dark'])],
+                 foreground=[('selected', 'white')])
         
         # 輸入框樣式
         style.configure('Modern.TEntry',
                        fieldbackground=colors['surface'],
+                       foreground=colors['text_primary'],
                        font=('Segoe UI', 10),
                        padding=(8, 5))
         
@@ -356,6 +531,15 @@ class ModernMainFrame:
             callback=self.on_language_changed
         )
         self.lang_selector.get_widget().pack(side='left', padx=(0, 10))
+
+        # 主題切換
+        self.theme_toggle_btn = ttk.Button(
+            tool_container,
+            style='Toolbar.TButton',
+            command=self.toggle_theme
+        )
+        self.theme_toggle_btn.pack(side='left', padx=(0, 10))
+        self._update_theme_toggle_label()
         
         # 登出/登入按鈕
         self.auth_button = ttk.Button(
@@ -374,14 +558,14 @@ class ModernMainFrame:
         self.sidebar_frame.pack_propagate(False)
         
         # 側邊欄標題
-        sidebar_title = ttk.Label(
+        self.sidebar_title = ttk.Label(
             self.sidebar_frame,
             font=('Segoe UI', 12, 'bold'),
             foreground='white',
             background=self.COLORS['sidebar']
         )
-        self._register_text(sidebar_title, "navigation.menuTitle", "導航選單")
-        sidebar_title.pack(pady=(20, 10), padx=20, anchor='w')
+        self._register_text(self.sidebar_title, "navigation.menuTitle", "導航選單")
+        self.sidebar_title.pack(pady=(20, 10), padx=20, anchor='w')
         
         # 導航按鈕
         self.nav_buttons = {}
@@ -416,14 +600,14 @@ class ModernMainFrame:
         separator = ttk.Separator(self.sidebar_frame, orient='horizontal')
         separator.pack(fill='x', padx=10, pady=(20, 10))
         
-        version_label = ttk.Label(
+        self.sidebar_version_label = ttk.Label(
             self.sidebar_frame,
             font=('Segoe UI', 8),
             foreground='white',
             background=self.COLORS['sidebar']
         )
-        self._register_text(version_label, "header.version", "Version 2.0")
-        version_label.pack(side='bottom', pady=(0, 10), padx=20, anchor='w')
+        self._register_text(self.sidebar_version_label, "header.version", "Version 2.0")
+        self.sidebar_version_label.pack(side='bottom', pady=(0, 10), padx=20, anchor='w')
         
         # 收合/展開按鈕
         self.toggle_sidebar_btn = ttk.Button(
@@ -499,7 +683,8 @@ class ModernMainFrame:
         
         # 狀態指示器
         self.status_indicator = tk.Canvas(self.status_frame, width=12, height=12, highlightthickness=0)
-        self.status_indicator.create_oval(1, 1, 11, 11, fill=self.COLORS['success'], outline="")
+        self._register_canvas_widget(self.status_indicator, "surface")
+        self.status_indicator_id = self.status_indicator.create_oval(1, 1, 11, 11, fill=self.COLORS['success'], outline="")
         self.status_indicator.pack(side='right', padx=20)
     
     def show_page(self, page_id):
@@ -620,6 +805,7 @@ class ModernMainFrame:
         self._register_text(key_output_label, "summary.keyOutput", "🔑 Key Machine Output:", scope="page")
         key_output_label.pack(anchor='w', padx=self.layout["card_pad"], pady=(20, 5))
         self.key_output_text = tk.Text(basic_card, height=4, font=('Segoe UI', 10), relief='flat', bg=self.COLORS['surface'], wrap="word")
+        self._register_text_widget(self.key_output_text)
         self.key_output_text.pack(fill='x', padx=self.layout["card_pad"], pady=(0, 15))
         
         # Key Issues
@@ -627,6 +813,7 @@ class ModernMainFrame:
         self._register_text(key_issues_label, "summary.issues", "⚠️ Key Issues:", scope="page")
         key_issues_label.pack(anchor='w', padx=self.layout["card_pad"], pady=(15, 5))
         self.key_issues_text = tk.Text(basic_card, height=4, font=('Segoe UI', 10), relief='flat', bg=self.COLORS['surface'], wrap="word")
+        self._register_text_widget(self.key_issues_text)
         self.key_issues_text.pack(fill='x', padx=self.layout["card_pad"], pady=(0, 15))
         
         # Countermeasures
@@ -634,6 +821,7 @@ class ModernMainFrame:
         self._register_text(counter_label, "summary.countermeasures", "✅ Countermeasures:", scope="page")
         counter_label.pack(anchor='w', padx=self.layout["card_pad"], pady=(15, 5))
         self.countermeasures_text = tk.Text(basic_card, height=4, font=('Segoe UI', 10), relief='flat', bg=self.COLORS['surface'], wrap="word")
+        self._register_text_widget(self.countermeasures_text)
         self.countermeasures_text.pack(fill='x', padx=self.layout["card_pad"], pady=(0, 20))
         
         # 操作按鈕
@@ -793,6 +981,7 @@ class ModernMainFrame:
         popup.title(self._t("common.selectDate", "選擇日期"))
         popup.resizable(False, False)
         popup.transient(self.parent)
+        popup.configure(background=self.COLORS['background'])
         self._calendar_popup = popup
 
         header = ttk.Frame(popup, padding=(10, 10, 10, 0))
@@ -935,6 +1124,7 @@ class ModernMainFrame:
         self._register_text(desc_label, "common.description", "異常內容:", scope="page")
         desc_label.grid(row=2, column=0, sticky='w', pady=self.layout["row_pad"])
         self.equip_desc_text = tk.Text(form_frame, height=4, font=('Segoe UI', 10), relief='flat', bg=self.COLORS['surface'], wrap="word")
+        self._register_text_widget(self.equip_desc_text)
         self.equip_desc_text.grid(row=2, column=1, columnspan=3, sticky='ew', padx=self.layout["field_gap"], pady=self.layout["row_pad"])
         
         # 對應內容
@@ -942,6 +1132,7 @@ class ModernMainFrame:
         self._register_text(action_label, "equipment.actionTaken", "對應內容:", scope="page")
         action_label.grid(row=3, column=0, sticky='w', pady=self.layout["row_pad"])
         self.action_text = tk.Text(form_frame, height=4, font=('Segoe UI', 10), relief='flat', bg=self.COLORS['surface'], wrap="word")
+        self._register_text_widget(self.action_text)
         self.action_text.grid(row=3, column=1, columnspan=3, sticky='ew', padx=self.layout["field_gap"], pady=self.layout["row_pad"])
         
         # 圖片上傳
@@ -996,6 +1187,7 @@ class ModernMainFrame:
         self._register_text(lot_desc_label, "common.description", "異常內容:", scope="page")
         lot_desc_label.grid(row=1, column=0, sticky='w', pady=self.layout["row_pad"])
         self.lot_desc_text = tk.Text(form_frame, height=4, font=('Segoe UI', 10), relief='flat', bg=self.COLORS['surface'], wrap="word")
+        self._register_text_widget(self.lot_desc_text)
         self.lot_desc_text.grid(row=1, column=1, columnspan=3, sticky='ew', padx=self.layout["field_gap"], pady=self.layout["row_pad"])
         
         # 處置狀況
@@ -1012,6 +1204,7 @@ class ModernMainFrame:
         self._register_text(notes_label, "lot.notes", "特記事項:", scope="page")
         notes_label.grid(row=3, column=0, sticky='w', pady=self.layout["row_pad"])
         self.lot_notes_text = tk.Text(form_frame, height=4, font=('Segoe UI', 10), relief='flat', bg=self.COLORS['surface'], wrap="word")
+        self._register_text_widget(self.lot_notes_text)
         self.lot_notes_text.grid(row=3, column=1, columnspan=3, sticky='ew', padx=self.layout["field_gap"], pady=self.layout["row_pad"])
         
         # 按鈕
@@ -1057,9 +1250,9 @@ class ModernMainFrame:
         self._register_text(confirm_btn, "summaryDashboard.confirm", "確定", scope="page")
         confirm_btn.grid(row=0, column=4, padx=(20, 0), pady=self.layout["row_pad"])
 
-        hint_label = ttk.Label(control_frame, font=('Segoe UI', 9), foreground=self.COLORS['text_secondary'])
-        self._register_text(hint_label, "summaryDashboard.hint", "選擇日期區間後按下確定以產生統計結果", scope="page")
-        hint_label.grid(row=1, column=0, columnspan=5, sticky='w')
+        self.summary_hint_label = ttk.Label(control_frame, font=('Segoe UI', 9), foreground=self.COLORS['text_secondary'])
+        self._register_text(self.summary_hint_label, "summaryDashboard.hint", "選擇日期區間後按下確定以產生統計結果", scope="page")
+        self.summary_hint_label.grid(row=1, column=0, columnspan=5, sticky='w')
 
         start_default, end_default = self._get_month_date_range()
         self.summary_dash_start_var.set(start_default)
@@ -1251,6 +1444,7 @@ class ModernMainFrame:
             background=self.COLORS['background'],
             highlightthickness=0
         )
+        self._register_canvas_widget(self.abnormal_scroll_canvas, "background")
         self.abnormal_scroll_canvas.pack(side="left", fill="both", expand=True)
         scroll = ttk.Scrollbar(self.page_content, orient="vertical", command=self.abnormal_scroll_canvas.yview)
         scroll.pack(side="right", fill="y")
@@ -1278,6 +1472,7 @@ class ModernMainFrame:
             background=self.COLORS['background'],
             highlightthickness=0
         )
+        self._register_canvas_widget(self.summary_scroll_canvas, "background")
         self.summary_scroll_canvas.pack(side="left", fill="both", expand=True)
         scroll = ttk.Scrollbar(self.page_content, orient="vertical", command=self.summary_scroll_canvas.yview)
         scroll.pack(side="right", fill="y")
@@ -1693,6 +1888,27 @@ class ModernMainFrame:
         rcParams["axes.unicode_minus"] = False
         self._cjk_font_ready = True
 
+    def _get_chart_theme(self):
+        colors = self.COLORS
+        return {
+            "face": colors['surface'],
+            "grid": colors['divider'],
+            "text": colors['text_primary'],
+            "line": colors['success'],
+            "bar_primary": colors['primary'],
+            "bar_accent": colors['accent'],
+        }
+
+    def _apply_chart_axes_theme(self, ax, theme):
+        ax.set_facecolor(theme["face"])
+        ax.tick_params(axis="x", colors=theme["text"])
+        ax.tick_params(axis="y", colors=theme["text"])
+        ax.title.set_color(theme["text"])
+        ax.xaxis.label.set_color(theme["text"])
+        ax.yaxis.label.set_color(theme["text"])
+        for spine in ax.spines.values():
+            spine.set_color(theme["grid"])
+
     def _clear_summary_charts(self):
         for frame in (getattr(self, "summary_pie_frame", None), getattr(self, "summary_bar_frame", None)):
             if not frame or not frame.winfo_exists():
@@ -1713,6 +1929,7 @@ class ModernMainFrame:
             return
 
         self._ensure_cjk_font()
+        theme = self._get_chart_theme()
 
         daily_series = data.get("daily_series", [])
         labels = [item["date"].strftime("%Y-%m-%d") for item in daily_series]
@@ -1724,7 +1941,9 @@ class ModernMainFrame:
             rate_values.append((item.get("present", 0) / total * 100) if total else 0)
 
         line_fig = Figure(figsize=(4.2, 3.2), dpi=100)
+        line_fig.patch.set_facecolor(theme["face"])
         line_ax = line_fig.add_subplot(111)
+        self._apply_chart_axes_theme(line_ax, theme)
         line_ax.set_title(self._t("summaryDashboard.rateLineTitle", "出勤率趨勢"))
         if labels:
             x = range(len(labels))
@@ -1732,44 +1951,70 @@ class ModernMainFrame:
                 list(x),
                 rate_values,
                 marker="o",
-                color="#2e7d32",
+                color=theme["line"],
                 label=self._t("summaryDashboard.rateSeries", "出勤率"),
             )
             line_ax.set_xticks(list(x))
             line_ax.set_xticklabels(labels, rotation=45, ha="right")
             line_ax.set_ylabel(self._t("summaryDashboard.rateAxis", "出勤率 (%)"))
             line_ax.set_ylim(0, 100)
-            line_ax.legend(loc="upper right")
+            legend = line_ax.legend(loc="upper right")
+            legend.get_frame().set_facecolor(theme["face"])
+            legend.get_frame().set_edgecolor(theme["grid"])
+            for text in legend.get_texts():
+                text.set_color(theme["text"])
         else:
-            line_ax.text(0.5, 0.5, self._t("common.emptyData", "查無資料"), ha="center", va="center")
+            line_ax.text(
+                0.5,
+                0.5,
+                self._t("common.emptyData", "查無資料"),
+                ha="center",
+                va="center",
+                color=theme["text"],
+            )
         line_fig.tight_layout()
         self.summary_pie_canvas = FigureCanvasTkAgg(line_fig, master=self.summary_pie_frame)
         self.summary_pie_canvas.draw()
+        self.summary_pie_canvas.get_tk_widget().configure(background=theme["face"])
         self.summary_pie_canvas.get_tk_widget().pack(fill='both', expand=True)
 
         bar_fig = Figure(figsize=(4.6, 3.2), dpi=100)
+        bar_fig.patch.set_facecolor(theme["face"])
         bar_ax = bar_fig.add_subplot(111)
+        self._apply_chart_axes_theme(bar_ax, theme)
         bar_ax.set_title(self._t("summaryDashboard.countChartTitle", "出勤人數"))
 
         if labels:
             x = range(len(labels))
-            bar_ax.bar(x, regular_values, label=self._t("attendance.regular_short", "正職"), color="#1976D2")
+            bar_ax.bar(x, regular_values, label=self._t("attendance.regular_short", "正職"), color=theme["bar_primary"])
             bar_ax.bar(
                 x,
                 contract_values,
                 bottom=regular_values,
                 label=self._t("attendance.contractor_short", "契約"),
-                color="#FFB74D",
+                color=theme["bar_accent"],
             )
             bar_ax.set_xticks(list(x))
             bar_ax.set_xticklabels(labels, rotation=45, ha="right")
             bar_ax.set_ylabel(self._t("summaryDashboard.countAxis", "出勤人數"))
-            bar_ax.legend(loc="upper right")
+            legend = bar_ax.legend(loc="upper right")
+            legend.get_frame().set_facecolor(theme["face"])
+            legend.get_frame().set_edgecolor(theme["grid"])
+            for text in legend.get_texts():
+                text.set_color(theme["text"])
         else:
-            bar_ax.text(0.5, 0.5, self._t("common.emptyData", "查無資料"), ha="center", va="center")
+            bar_ax.text(
+                0.5,
+                0.5,
+                self._t("common.emptyData", "查無資料"),
+                ha="center",
+                va="center",
+                color=theme["text"],
+            )
         bar_fig.tight_layout()
         self.summary_bar_canvas = FigureCanvasTkAgg(bar_fig, master=self.summary_bar_frame)
         self.summary_bar_canvas.draw()
+        self.summary_bar_canvas.get_tk_widget().configure(background=theme["face"])
         self.summary_bar_canvas.get_tk_widget().pack(fill='both', expand=True)
 
     def create_delay_list_page(self):
@@ -2201,6 +2446,7 @@ class ModernMainFrame:
         self.update_nav_text()
         self.lang_selector.update_text()
         self.lang_selector.update_language_display(new_lang_code)
+        self._update_theme_toggle_label()
         if hasattr(self, "login_lang_selector"):
             self.login_lang_selector.update_text()
             self.login_lang_selector.update_language_display(new_lang_code)
@@ -2421,6 +2667,7 @@ class ModernMainFrame:
 
     def _open_history_dialog(self, title, columns, headers, rows, row_builder):
         dialog = tk.Toplevel(self.parent)
+        dialog.configure(background=self.COLORS['background'])
         dialog.title(title)
         dialog.geometry("900x420")
         dialog.transient(self.parent)
@@ -2841,6 +3088,7 @@ class ModernMainFrame:
             sheet_name = xls.sheet_names[0]
             if len(xls.sheet_names) > 1:
                 picker = tk.Toplevel(self.parent)
+                picker.configure(background=self.COLORS['background'])
                 picker.title(self._t("navigation.delayList", "延遲清單"))
                 ttk.Label(picker, text=self._t("common.selectSheet", "選擇工作表")).pack(padx=10, pady=5)
                 sheet_var = tk.StringVar(value=xls.sheet_names[0])
@@ -2971,6 +3219,7 @@ class ModernMainFrame:
         ) = vals
         is_pending = isinstance(row_id, str) and str(row_id).startswith("P")
         dlg = tk.Toplevel(self.parent)
+        dlg.configure(background=self.COLORS['background'])
         dlg.title(self._t("navigation.delayList", "延遲清單"))
         dlg.columnconfigure(1, weight=1)
 
@@ -3261,6 +3510,7 @@ class ModernMainFrame:
         ) = vals
         is_pending = isinstance(row_id, str) and str(row_id).startswith("P")
         dlg = tk.Toplevel(self.parent)
+        dlg.configure(background=self.COLORS['background'])
         dlg.title(self._t("navigation.summaryActual", "Summary Actual"))
         dlg.columnconfigure(1, weight=1)
 

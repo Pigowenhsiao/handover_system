@@ -109,6 +109,14 @@ def start_modern_ui():
         traceback.print_exc()
         sys.exit(1)
 
+def prompt_continue(message, default=True):
+    if sys.stdin is None or not sys.stdin.isatty():
+        fallback = "y" if default else "n"
+        print(f"{message} [自動回覆: {fallback}]")
+        return default
+    response = input(message)
+    return response.strip().lower() == 'y'
+
 
 def main():
     """メイン関数"""
@@ -119,14 +127,12 @@ def main():
     
     # 檢查依賴
     if not check_dependencies():
-        response = input("続行して起動しますか? (y/n): ")
-        if response.lower() != 'y':
+        if not prompt_continue("続行して起動しますか? (y/n): ", default=True):
             sys.exit(0)
     
     # 初始化資料庫
     if not initialize_database():
-        response = input("データベース初期化に失敗しました。続行しますか? (y/n): ")
-        if response.lower() != 'y':
+        if not prompt_continue("データベース初期化に失敗しました。続行しますか? (y/n): ", default=True):
             sys.exit(0)
     
     # 啟動現代化 UI

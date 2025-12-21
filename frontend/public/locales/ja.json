@@ -23,6 +23,10 @@
     "delayList": "ディレイリスト",
     "summaryActual": "Summary Actual"
   },
+  "theme": {
+    "switchToDark": "ダークモードに切り替え",
+    "switchToLight": "ライトモードに切り替え"
+  },
   "common": {
     "save": "保存",
     "cancel": "キャンセル",

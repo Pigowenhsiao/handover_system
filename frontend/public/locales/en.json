@@ -23,6 +23,10 @@
     "delayList": "Delay List",
     "summaryActual": "Summary Actual"
   },
+  "theme": {
+    "switchToDark": "Switch to Dark Mode",
+    "switchToLight": "Switch to Light Mode"
+  },
   "common": {
     "save": "Save",
     "cancel": "Cancel",
