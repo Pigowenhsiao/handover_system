@@ -20,7 +20,8 @@
 - 優先使用內建模組與標準庫；避免不必要的第三方依賴。
 
 ### Entry Point
-- 預設啟動入口為 `app.py`（桌面版主程式）。
+- 現代化介面啟動入口為 `run_modern_system.py`（建議使用）。
+- `app.py` 為舊版介面入口（已停止更新，僅作為歷史檔案）。
 
 ### Architecture Patterns
 - 單機桌面應用：Tkinter GUI 與資料庫均在本機執行。
@@ -43,14 +44,15 @@
 - 多語言資源可透過 GUI 匯入/修改，立即反映於介面。
 
 ## Functional Requirements 摘要
-- 使用者故事：登入後填寫交接日報；可切換日/夜班與區域（etching_D、etching_E、litho、thin_film）；可新增多筆設備異常與異常批次；填寫 Key Machine Output / Key Issues / Countermeasures 總結；可上傳照片；管理者可查詢日期範圍並匯出。
+- 使用者故事：登入後先儲存日報基本資訊（日期/班別/區域）才能使用其他功能。
+- 日報唯一性：同日期 + 班別 + 區域視為同一筆日報，儲存時會覆寫舊資料。
+- 基礎資訊：日期採日曆選擇器；班別下拉 [Day, Night]；區域下拉 [etching_D, etching_E, litho, thin_film]；填寫者帶入登入者。
+- 出勤：記錄正職/契約的定員、出勤、欠勤、理由。
+- 設備異常：每筆含設備號碼、異常內容、發生時刻、影響數量、對應內容，可動態多筆。
+- 異常批次：每筆含批號、異常內容、處置狀況、特記事項，可動態多筆。
+- 總結：改為出勤統計（表格 + 出勤率折線圖 + 出勤人數堆疊柱狀圖），日期區間預設當月 1 號到今天。
+- 異常歷史：設備異常與異常批次歷史查詢（雙表格），支援日期區間與班別/區域篩選。
 - 報表匯入：Delay List 與 Summary Actual 支援 Excel 匯入 → 暫存 → 上傳流程。
-- 匯出：報表查詢結果可匯出 CSV。
-- 基礎資訊：日期 YYYY/MM/DD；班別下拉 [Day, Night]；區域下拉 [etching_D, etching_E, litho, thin_film]；填寫者帶入登入者。
-- 出勤：記錄正社員、契約/派遣的定員、出勤、欠勤、理由。
-- 設備異常：每筆含設備番号、異常內容、發生時刻、影響數量、對應內容，可動態多筆。
-- 本日異常批次：每筆含異常內容、處置狀況、特記事項，可動態多筆。
-- 總結：Key Machine Output、Key Issues、Countermeasures（文字欄位）。
 
 ## Data Model (SQLAlchemy Models)
 - User：`id`、`username`（唯一）、`password_hash`、`role`（admin/user）。
@@ -64,8 +66,8 @@
 - SummaryActualEntry：`id`、`summary_date`、`label`、`plan`、`completed`、`in_process`、`on_track`、`at_risk`、`delayed`、`no_data`、`scrapped`。
 
 ## UI/UX 佈局
-- 登入視窗：登入後進入主視窗。
-- 主視窗：使用 `ttk.Notebook` 分頁（填寫日報、報表查詢、管理功能等）。
+- 登入視窗：登入後進入主視窗（支援多語切換）。
+- 主視窗：左側導覽選單 + 右側內容區（卡片式佈局）。
 - 資料表格：`ttk.Treeview` 呈現查詢/彙總，雙擊列進入編輯視窗。
 - 檔案匯入/上傳：`filedialog` 選擇 Excel/圖片，寫入本機檔案或 SQLite。
 - 圖表：matplotlib 嵌入 Tkinter 顯示。

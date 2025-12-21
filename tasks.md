@@ -2,60 +2,39 @@
 
 ## 專案：電子交接本系統 (Handover System)
 
-根據功能規格、實施計劃、數據模型和API合約生成的任務清單。
+此清單對齊現行單機桌面版，標記已完成的核心功能與後續維護項目。
 
 ## Phase 1: 基礎設施 (Infrastructure)
-
-- [ ] T001 [P] 創建專案目錄結構 (backend/, frontend/, docs/, specs/, uploads/)
-- [ ] T002 [P] 實現數據庫連接管理模塊 (backend/database/connection.py)
-- [ ] T003 [P] 實現應用程式配置管理 (backend/config/settings.py)
-- [ ] T004 實現數據庫模型 (backend/models/user.py, backend/models/daily_report.py, backend/models/attendance.py, backend/models/equipment.py, backend/models/lot.py)
+- [x] SQLite + SQLAlchemy 連線與模型建立 (`models.py`)
+- [x] 初始化管理員與預設班別/區域
+- [x] 本機設定檔讀寫 (`handover_settings.json`)
 
 ## Phase 2: 核心功能 (Core Features)
+- [x] 登入流程與角色控制
+- [x] 基本資訊 (日期/班別/區域) 儲存門檻
+- [x] 日報表摘要欄位儲存
+- [x] 出勤記錄 (正職/契約同頁輸入)
+- [x] 設備異常記錄
+- [x] 異常批次記錄
+- [x] Delay List / Summary Actual 匯入與上傳
 
-- [ ] T005 實現用戶認證系統 (backend/auth/user_auth.py)
-- [ ] T006 實現密碼加密管理 (使用 bcrypt，backend/auth/password_manager.py)
-- [ ] T007 實現多語言支持框架 (backend/i18n/language_manager.py)
-- [ ] T008 創建語言資源文件 (frontend/public/locales/zh.json, ja.json, en.json)
-- [ ] T009 實現日報表功能 (backend/api/daily_reports.py)
-- [ ] T010 實現出勤記錄功能 (backend/api/attendance.py)
-- [ ] T011 實現設備異常記錄功能 (backend/api/equipment_logs.py)
-- [ ] T012 實現異常批次記錄功能 (backend/api/lot_logs.py)
+## Phase 3: 介面與統計 (UI & Analytics)
+- [x] 現代化側邊欄 UI (`modern_main_frame.py`)
+- [x] 多語切換與語言資源管理
+- [x] 出勤統計表 + 折線圖 + 堆疊柱狀圖
+- [x] 異常歷史查詢 (設備/批次)
+- [x] 頁面滾動與一致化版面
 
-## Phase 3: 界面開發 (UI Development)
+## Phase 4: 系統管理 (Admin)
+- [x] 使用者管理 (新增/更新/刪除/重設密碼)
+- [x] 翻譯資源管理 (匯入/匯出)
+- [x] 班別/區域管理
+- [x] 系統設定 (備份間隔)
 
-- [ ] T013 創建主界面框架 (frontend/src/components/MainApp.py)
-- [ ] T014 實現語言切換組件 (frontend/src/components/LanguageSwitcher.py)
-- [ ] T015 實現導航菜單 (frontend/src/components/NavigationMenu.py)
-- [ ] T016 實現登入界面 (frontend/src/components/LoginPage.py)
-- [ ] T017 實現日報表填寫界面 (frontend/src/components/DailyReportForm.py)
-- [ ] T018 實現出勤記錄界面 (frontend/src/components/AttendanceSection.py)
-- [ ] T019 實現設備異常記錄界面 (frontend/src/components/EquipmentLogSection.py)
-- [ ] T020 實現異常批次記錄界面 (frontend/src/components/LotLogSection.py)
-- [ ] T021 實現總結輸入界面 (frontend/src/components/SummarySection.py)
-- [ ] T022 實現圖片上傳功能 (frontend/src/components/ImageUploader.py)
+## Phase 5: 測試與封裝 (Testing & Packaging)
+- [x] 測試腳本結構 (`tests/`)
+- [x] 打包腳本 (`scripts/build_executable.py`)
 
-## Phase 4: 高級功能 (Advanced Features)
-
-- [ ] T023 實現用戶管理界面 (frontend/src/components/UserManagement.py)
-- [ ] T024 開發搜索和過濾功能 (backend/api/search.py)
-- [ ] T025 實現報表匯出功能 (backend/utils/report_exporter.py)
-- [ ] T026 實現數據備份和恢復功能 (backend/utils/data_backup.py)
-- [ ] T027 建立操作日誌記錄系統 (backend/utils/logger.py)
-- [ ] T028 實現界面主題切換功能 (frontend/src/utils/theme_manager.py)
-
-## Phase 5: 測試與優化 (Testing & Optimization)
-
-- [ ] T029 建立單元測試套件 (tests/unit_tests.py)
-- [ ] T030 建立整合測試 (tests/integration_tests.py)
-- [ ] T031 執行效能測試和優化 (tests/performance_tests.py)
-- [ ] T032 執行安全性測試 (tests/security_tests.py)
-- [ ] T033 進行界面可用性測試 (tests/usability_tests.py)
-
-## Phase 6: 部署與文檔 (Deployment & Documentation)
-
-- [ ] T034 創建打包腳本 (scripts/build_executable.py)
-- [ ] T035 撰寫用戶操作手冊 (docs/user_manual.md)
-- [ ] T036 撰寫系統管理手冊 (docs/admin_guide.md)
-- [ ] T037 實施最終系統測試 (tests/final_integration_test.py)
-- [ ] T038 準備部署版本 (releases/v1.0.0/)
+## Phase 6: 文件 (Documentation)
+- [x] README / Quickstart / Spec 文件對齊現況
+- [x] 使用者與管理者操作手冊

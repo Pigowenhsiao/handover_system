@@ -19,7 +19,7 @@
   - 檔案型資料庫，無需額外伺服器，適合單機部署
   - 輕量級，適合本地應用程式
   - Python 內建支援
-  - 適合單用戶或多用戶少量併發場景
+  - 適合單用戶或少量併發場景
 - **替代方案**:
   - PostgreSQL/MySQL (功能強大但複雜度高)
 
@@ -31,7 +31,6 @@
   - 可以動態載入和切換語言
   - 適合 tkinter 界面的本地化需求
 - **替代方案**:
-  - Babel (成熟但主要針對網頁應用程式)
   - gettext (標準但配置較為複雜)
 
 ### 決策4: 密碼安全策略
@@ -50,9 +49,8 @@
 - **決策**: 使用 SQLAlchemy 作為 ORM
 - **理由**:
   - Python 中最流行的 ORM
-  - 支援多種資料庫後端
+  - 支援 SQLite
   - 功能強大且文件完善
-  - 與 FastAPI 整合良好
 - **替代方案**:
   - Peewee (更簡單但功能較少)
   - Django ORM (功能強大但綁定 Django 框架)
@@ -95,7 +93,7 @@
 1. **Pillow**: 用於圖片處理功能
 2. **bcrypt**: 用於密碼加密
 3. **SQLAlchemy**: 用於 ORM 操作
-4. **FastAPI**: 用於 API 端點
+4. **matplotlib / pandas**: 用於統計圖表與資料匯入
 
 ## 4. 效能優化策略 (Performance Optimization Strategies)
 

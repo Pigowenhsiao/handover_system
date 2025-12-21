@@ -1,5 +1,6 @@
 # 電子交接本桌面版依賴
 # tkinter 為系統套件（請確保已安裝 python3-tk）
+# Pillow 僅在舊版介面圖片功能需要
 sqlalchemy==2.0.23
 pandas==2.2.0
 bcrypt==4.0.1
