@@ -276,6 +276,8 @@ class ModernMainFrame:
         self.setup_modern_styles()
         self._apply_theme_to_fixed_widgets()
         self._update_theme_toggle_label()
+        if hasattr(self, "summary_tree"):
+            self._configure_summary_tags()
         if hasattr(self, "attendance_section") and self.attendance_section:
             self.attendance_section.apply_theme()
         if self.summary_dashboard_data is not None:
@@ -574,6 +576,8 @@ class ModernMainFrame:
         )
         self.theme_toggle_btn.pack(side='left', padx=(0, 10))
         self._update_theme_toggle_label()
+        if hasattr(self, "summary_tree"):
+            self._configure_summary_tags()
         
         # 登出/登入按鈕
         self.auth_button = ttk.Button(
@@ -1009,11 +1013,10 @@ class ModernMainFrame:
             self.abnormal_area_var.set(all_label)
 
     def _create_date_picker(self, parent, var, width=16):
-        entry = ttk.Entry(parent, textvariable=var, style='Modern.TEntry', width=width, state='readonly')
+        entry = ttk.Entry(parent, textvariable=var, style='Modern.TEntry', width=width, state='normal')
         entry.pack(side='left', fill='x', expand=True)
         button = ttk.Button(parent, text="📅", width=3, command=lambda: self._open_calendar_popup(var))
         button.pack(side='left', padx=(6, 0))
-        entry.bind("<Button-1>", lambda _e: self._open_calendar_popup(var))
         return entry, button
 
     def _open_calendar_popup(self, target_var):
@@ -1067,6 +1070,16 @@ class ModernMainFrame:
         prev_btn.pack(side='left')
         next_btn = ttk.Button(header, text="▶", width=3, command=lambda: change_month(1))
         next_btn.pack(side='left', padx=(5, 0))
+
+        def jump_today():
+            today_date = datetime.now().date()
+            target_var.set(today_date.strftime("%Y-%m-%d"))
+            if popup.winfo_exists():
+                popup.destroy()
+            self._calendar_popup = None
+
+        today_btn = ttk.Button(header, text=self._t("common.today", "Today"), command=jump_today)
+        today_btn.pack(side='right')
 
         body = ttk.Frame(popup, padding=10)
         body.pack(fill='both', expand=True)
@@ -2084,6 +2097,7 @@ class ModernMainFrame:
         self._register_text(start_label, "delay.startDate", "起日", scope="page")
         start_label.grid(row=0, column=0, sticky='w', pady=self.layout["row_pad"])
         self.delay_start_var = tk.StringVar()
+        self.delay_start_var.set(datetime.now().replace(day=1).strftime("%Y-%m-%d"))
         start_frame = ttk.Frame(control_frame, style='Card.TFrame')
         start_frame.grid(row=0, column=1, sticky='w', padx=(self.layout["field_gap"], 0), pady=self.layout["row_pad"])
         self._create_date_picker(start_frame, self.delay_start_var, width=14)
@@ -2092,6 +2106,7 @@ class ModernMainFrame:
         self._register_text(end_label, "delay.endDate", "迄日", scope="page")
         end_label.grid(row=0, column=2, sticky='w', padx=(20, 0), pady=self.layout["row_pad"])
         self.delay_end_var = tk.StringVar()
+        self.delay_end_var.set(datetime.now().strftime("%Y-%m-%d"))
         end_frame = ttk.Frame(control_frame, style='Card.TFrame')
         end_frame.grid(row=0, column=3, sticky='w', padx=(self.layout["field_gap"], 0), pady=self.layout["row_pad"])
         self._create_date_picker(end_frame, self.delay_end_var, width=14)
@@ -2120,10 +2135,6 @@ class ModernMainFrame:
         )
         self._register_text(clear_btn, "delay.clear", "清除畫面", scope="page")
         clear_btn.grid(row=1, column=3, padx=(20, 0), pady=self.layout["row_pad"])
-
-        delete_btn = ttk.Button(control_frame, style='Accent.TButton', command=self._delete_selected_delay_pending)
-        self._register_text(delete_btn, "common.delete", "刪除", scope="page")
-        delete_btn.grid(row=1, column=4, padx=(20, 0), pady=self.layout["row_pad"])
 
         table_card = self.create_card(self.page_content, '📋', "cards.delayListTable", "延遲清單資料")
         table_card.pack(fill='both', expand=True)
@@ -2169,7 +2180,8 @@ class ModernMainFrame:
         delay_scroll = ttk.Scrollbar(table_frame, orient="vertical", command=self.delay_tree.yview)
         self.delay_tree.configure(yscrollcommand=delay_scroll.set)
         delay_scroll.pack(side="right", fill="y")
-        self.delay_tree.bind("<Double-1>", lambda e: self._edit_delay_dialog())
+        self.delay_tree.bind("<Double-1>", self._start_delay_cell_edit)
+        self.delay_tree.bind("<Button-3>", self._show_delay_context_menu)
 
         self._load_delay_entries()
 
@@ -2188,6 +2200,7 @@ class ModernMainFrame:
         self._register_text(start_label, "summaryActual.startDate", "日期篩選起日", scope="page")
         start_label.grid(row=0, column=0, sticky='w', pady=self.layout["row_pad"])
         self.summary_start_var = tk.StringVar()
+        self.summary_start_var.set(datetime.now().replace(day=1).strftime("%Y-%m-%d"))
         summary_start_frame = ttk.Frame(control_frame, style='Card.TFrame')
         summary_start_frame.grid(row=0, column=1, sticky='w', padx=(self.layout["field_gap"], 0), pady=self.layout["row_pad"])
         self._create_date_picker(summary_start_frame, self.summary_start_var, width=14)
@@ -2196,6 +2209,7 @@ class ModernMainFrame:
         self._register_text(end_label, "summaryActual.endDate", "日期篩選迄日", scope="page")
         end_label.grid(row=0, column=2, sticky='w', padx=(20, 0), pady=self.layout["row_pad"])
         self.summary_end_var = tk.StringVar()
+        self.summary_end_var.set(datetime.now().strftime("%Y-%m-%d"))
         summary_end_frame = ttk.Frame(control_frame, style='Card.TFrame')
         summary_end_frame.grid(row=0, column=3, sticky='w', padx=(self.layout["field_gap"], 0), pady=self.layout["row_pad"])
         self._create_date_picker(summary_end_frame, self.summary_end_var, width=14)
@@ -2220,10 +2234,6 @@ class ModernMainFrame:
         )
         self._register_text(clear_btn, "summaryActual.clear", "清除畫面", scope="page")
         clear_btn.grid(row=1, column=2, padx=(20, 0), pady=self.layout["row_pad"])
-
-        delete_btn = ttk.Button(control_frame, style='Accent.TButton', command=self._delete_selected_summary_pending)
-        self._register_text(delete_btn, "common.delete", "刪除", scope="page")
-        delete_btn.grid(row=1, column=3, padx=(20, 0), pady=self.layout["row_pad"])
 
         table_card = self.create_card(self.page_content, '📋', "cards.summaryActualTable", "Summary Actual 資料")
         table_card.pack(fill='both', expand=True)
@@ -2260,16 +2270,15 @@ class ModernMainFrame:
         ]
 
         self.summary_tree = ttk.Treeview(table_frame, columns=cols, show="headings", height=14, selectmode="extended")
-        self.summary_tree.tag_configure("summary_red", foreground="#B00020", font=("Segoe UI", 11, "bold"))
-        self.summary_tree.tag_configure("summary_green", foreground="#006400", font=("Segoe UI", 11, "bold"))
-        self.summary_tree.tag_configure("summary_yellow", foreground="#FFC107", font=("Segoe UI", 11, "bold"))
-        self.summary_tree.tag_configure("summary_default", font=("Segoe UI", 11))
+        if hasattr(self, "summary_tree"):
+            self._configure_summary_tags()
         self._update_summary_headers()
         self.summary_tree.pack(side='left', fill='both', expand=True)
         summary_scroll = ttk.Scrollbar(table_frame, orient="vertical", command=self.summary_tree.yview)
         self.summary_tree.configure(yscrollcommand=summary_scroll.set)
         summary_scroll.pack(side="right", fill="y")
         self.summary_tree.bind("<Double-1>", lambda e: self._edit_summary_dialog())
+        self.summary_tree.bind("<Button-3>", self._show_summary_context_menu)
 
         self._load_summary_actual()
     
@@ -2506,6 +2515,8 @@ class ModernMainFrame:
         self.lang_selector.update_text()
         self.lang_selector.update_language_display(new_lang_code)
         self._update_theme_toggle_label()
+        if hasattr(self, "summary_tree"):
+            self._configure_summary_tags()
         if hasattr(self, "login_lang_selector"):
             self.login_lang_selector.update_text()
             self.login_lang_selector.update_language_display(new_lang_code)
@@ -3124,6 +3135,24 @@ class ModernMainFrame:
                 del self.summary_pending_records[idx]
         self._load_summary_actual()
 
+    def _configure_summary_tags(self):
+        if not hasattr(self, "summary_tree"):
+            return
+        if self.theme_mode == "dark":
+            red = "#FF6B6B"
+            yellow = "#FFD54F"
+            green = "#66FF99"
+        else:
+            red = "#B00020"
+            yellow = "#B8860B"
+            green = "#006400"
+        base_font = ("Segoe UI", 11)
+        bold_font = ("Segoe UI", 11, "bold")
+        self.summary_tree.tag_configure("summary_default", font=base_font)
+        self.summary_tree.tag_configure("summary_red", foreground=red, font=bold_font)
+        self.summary_tree.tag_configure("summary_yellow", foreground=yellow, font=bold_font)
+        self.summary_tree.tag_configure("summary_green", foreground=green, font=bold_font)
+
     def _summary_row_tags(self, row):
         def val(key):
             if isinstance(row, dict):
@@ -3145,11 +3174,192 @@ class ModernMainFrame:
 
         if has_number(["delayed"]):
             return ("summary_default", "summary_red")
-        if has_number(["plan", "completed", "in_process", "on_track"]):
-            return ("summary_default", "summary_green")
         if has_number(["at_risk", "no_data", "scrapped"]):
             return ("summary_default", "summary_yellow")
+        if has_number(["plan", "completed", "in_process", "on_track"]):
+            return ("summary_default", "summary_green")
         return ("summary_default",)
+
+    def _start_delay_cell_edit(self, event):
+        row_id = self.delay_tree.identify_row(event.y)
+        col_id = self.delay_tree.identify_column(event.x)
+        if not row_id or not col_id:
+            return
+        col_index = int(col_id.replace("#", "")) - 1
+        if col_index <= 0:
+            return
+        values = list(self.delay_tree.item(row_id, "values"))
+        if col_index >= len(values):
+            return
+        bbox = self.delay_tree.bbox(row_id, col_id)
+        if not bbox:
+            return
+        x, y, width, height = bbox
+        self._end_delay_cell_edit()
+        self._delay_edit_target = (row_id, col_index)
+        self._delay_edit_var = tk.StringVar(value=str(values[col_index]))
+        entry = ttk.Entry(self.delay_tree, textvariable=self._delay_edit_var)
+        entry.place(x=x, y=y, width=width, height=height)
+        entry.focus_set()
+        entry.bind("<Return>", self._commit_delay_cell_edit)
+        entry.bind("<Escape>", self._cancel_delay_cell_edit)
+        entry.bind("<FocusOut>", self._commit_delay_cell_edit)
+        self._delay_edit_entry = entry
+
+    def _end_delay_cell_edit(self):
+        entry = getattr(self, "_delay_edit_entry", None)
+        if entry is not None and entry.winfo_exists():
+            entry.destroy()
+        self._delay_edit_entry = None
+        self._delay_edit_target = None
+        self._delay_edit_var = None
+
+    def _cancel_delay_cell_edit(self, _event=None):
+        self._end_delay_cell_edit()
+
+    def _commit_delay_cell_edit(self, _event=None):
+        if not getattr(self, "_delay_edit_target", None):
+            return
+        row_id, col_index = self._delay_edit_target
+        new_value = self._delay_edit_var.get().strip() if self._delay_edit_var else ""
+        col_name = self.delay_columns[col_index]
+        field_map = {
+            "date": "delay_date",
+            "time": "time_range",
+            "reactor": "reactor",
+            "process": "process",
+            "lot": "lot",
+            "wafer": "wafer",
+            "progress": "progress",
+            "prev_steps": "prev_steps",
+            "prev_time": "prev_time",
+            "severity": "severity",
+            "action": "action",
+            "note": "note",
+        }
+        field_name = field_map.get(col_name)
+        if not field_name:
+            self._end_delay_cell_edit()
+            return
+        parsed_value = new_value
+        if field_name == "delay_date":
+            try:
+                parsed_value = datetime.strptime(new_value, "%Y-%m-%d").date()
+            except Exception:
+                messagebox.showerror(self._t("common.error", "??"), self._t("errors.invalidDateFormat", "?????? YYYY-MM-DD"))
+                return
+        values = list(self.delay_tree.item(row_id, "values"))
+        values[col_index] = parsed_value
+        is_pending = isinstance(values[0], str) and str(values[0]).startswith("P")
+        if is_pending:
+            try:
+                idx = int(str(values[0])[1:])
+            except ValueError:
+                self._end_delay_cell_edit()
+                return
+            if 0 <= idx < len(self.delay_pending_records):
+                self.delay_pending_records[idx][field_name] = parsed_value if field_name == "delay_date" else str(parsed_value)
+            self.delay_tree.item(row_id, values=values)
+            self._end_delay_cell_edit()
+            return
+        try:
+            with SessionLocal() as db:
+                row = db.query(DelayEntry).filter(DelayEntry.id == values[0]).first()
+                if not row:
+                    raise ValueError(self._t("common.selectRow", "??????"))
+                setattr(row, field_name, parsed_value if field_name == "delay_date" else str(parsed_value))
+                db.commit()
+        except Exception as exc:
+            messagebox.showerror(self._t("common.error", "??"), f"{exc}")
+            return
+        self.delay_tree.item(row_id, values=values)
+        self._end_delay_cell_edit()
+
+    def _show_delay_context_menu(self, event):
+        row_id = self.delay_tree.identify_row(event.y)
+        if row_id and row_id not in self.delay_tree.selection():
+            self.delay_tree.selection_set(row_id)
+        menu = tk.Menu(self.delay_tree, tearoff=0)
+        menu.add_command(label=self._t("common.delete", "??"), command=self._delete_selected_delay_rows)
+        try:
+            menu.tk_popup(event.x_root, event.y_root)
+        finally:
+            menu.grab_release()
+
+    def _show_summary_context_menu(self, event):
+        row_id = self.summary_tree.identify_row(event.y)
+        if row_id and row_id not in self.summary_tree.selection():
+            self.summary_tree.selection_set(row_id)
+        menu = tk.Menu(self.summary_tree, tearoff=0)
+        menu.add_command(label=self._t("common.delete", "??"), command=self._delete_selected_summary_rows)
+        try:
+            menu.tk_popup(event.x_root, event.y_root)
+        finally:
+            menu.grab_release()
+
+    def _delete_selected_delay_rows(self):
+        selections = self.delay_tree.selection()
+        if not selections:
+            messagebox.showinfo(self._t("common.info", "??"), self._t("common.selectRow", "??????"))
+            return
+        pending_indices = []
+        db_ids = []
+        for item in selections:
+            values = self.delay_tree.item(item, "values")
+            if not values:
+                continue
+            row_id = values[0]
+            if isinstance(row_id, str) and row_id.startswith("P"):
+                try:
+                    pending_indices.append(int(row_id[1:]))
+                except ValueError:
+                    continue
+            else:
+                db_ids.append(row_id)
+        for idx in sorted(set(pending_indices), reverse=True):
+            if 0 <= idx < len(self.delay_pending_records):
+                del self.delay_pending_records[idx]
+        if db_ids:
+            try:
+                with SessionLocal() as db:
+                    db.query(DelayEntry).filter(DelayEntry.id.in_(db_ids)).delete(synchronize_session=False)
+                    db.commit()
+            except Exception as exc:
+                messagebox.showerror(self._t("common.error", "??"), f"{exc}")
+                return
+        self._load_delay_entries()
+
+    def _delete_selected_summary_rows(self):
+        selections = self.summary_tree.selection()
+        if not selections:
+            messagebox.showinfo(self._t("common.info", "??"), self._t("common.selectRow", "??????"))
+            return
+        pending_indices = []
+        db_ids = []
+        for item in selections:
+            values = self.summary_tree.item(item, "values")
+            if not values:
+                continue
+            row_id = values[0]
+            if isinstance(row_id, str) and row_id.startswith("P"):
+                try:
+                    pending_indices.append(int(row_id[1:]))
+                except ValueError:
+                    continue
+            else:
+                db_ids.append(row_id)
+        for idx in sorted(set(pending_indices), reverse=True):
+            if 0 <= idx < len(self.summary_pending_records):
+                del self.summary_pending_records[idx]
+        if db_ids:
+            try:
+                with SessionLocal() as db:
+                    db.query(SummaryActualEntry).filter(SummaryActualEntry.id.in_(db_ids)).delete(synchronize_session=False)
+                    db.commit()
+            except Exception as exc:
+                messagebox.showerror(self._t("common.error", "??"), f"{exc}")
+                return
+        self._load_summary_actual()
 
     def _render_delay_rows(self, rows, pending=False):
         self._clear_tree(self.delay_tree)
