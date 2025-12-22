@@ -1,13 +1,13 @@
-# 多語言支持功能研究 (Research)
+# 多言語対応 調査 (Research)
 
-## 1. 決策摘要
-- 使用 JSON 檔案作為語言資源
-- 以 LanguageManager 讀取與切換語言
-- 在 tkinter 介面即時更新文字
+## 1. 決定要約
+- JSON ファイルを言語リソースとして使用
+- LanguageManager で読み込みと切替
+- Tkinter UI で即時更新
 
 ## 2. 方案比較
-- **JSON + LanguageManager**: 輕量、易維護、適合單機桌面
-- **gettext**: 標準方案，但設定與維護成本較高
+- **JSON + LanguageManager**: 軽量、保守容易、単機アプリに適合
+- **gettext**: 標準だが設定/保守コストが高い
 
 ## 3. 結論
-本專案為單機桌面應用，採用 JSON + LanguageManager 能以最少依賴達成穩定的多語切換與維護需求。
+単機デスクトップ用途において、JSON + LanguageManager は最小依存で安定した多言語切替を提供できる。

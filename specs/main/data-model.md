@@ -1,22 +1,22 @@
-# 數據模型 (Data Model)
+# データモデル (Data Model)
 
-本專案使用 SQLAlchemy + SQLite，以下為現行資料表與欄位概覽。
+本プロジェクトは SQLAlchemy + SQLite を使用します。以下は現行のテーブルとカラム概要です。
 
-## 1. 使用者 (User)
+## 1. ユーザー (User)
 - **id** (INTEGER, PK)
 - **username** (VARCHAR(50), UNIQUE, NOT NULL)
 - **password_hash** (VARCHAR(128), NOT NULL)
 - **role** (VARCHAR(20), NOT NULL, default = 'user')
 
-## 2. 班別選項 (ShiftOption)
+## 2. シフト選択 (ShiftOption)
 - **id** (INTEGER, PK)
 - **name** (VARCHAR(50), UNIQUE, NOT NULL) 例：Day, Night
 
-## 3. 區域選項 (AreaOption)
+## 3. エリア選択 (AreaOption)
 - **id** (INTEGER, PK)
 - **name** (VARCHAR(50), UNIQUE, NOT NULL) 例：etching_D, etching_E, litho, thin_film
 
-## 4. 日報表 (DailyReport)
+## 4. 日報 (DailyReport)
 - **id** (INTEGER, PK)
 - **date** (DATE, NOT NULL)
 - **shift** (VARCHAR(20), NOT NULL)
@@ -27,7 +27,7 @@
 - **summary_issues** (TEXT, NOT NULL, default = '')
 - **summary_countermeasures** (TEXT, NOT NULL, default = '')
 
-## 5. 出勤記錄 (AttendanceEntry)
+## 5. 出勤記録 (AttendanceEntry)
 - **id** (INTEGER, PK)
 - **report_id** (INTEGER, FK → DailyReport.id, NOT NULL)
 - **category** (VARCHAR(20), NOT NULL) 例：Regular / Contract
@@ -46,7 +46,7 @@
 - **action_taken** (TEXT, NOT NULL, default = '')
 - **image_path** (VARCHAR(255), NULL)
 
-## 7. 異常批次 (LotLog)
+## 7. 異常ロット (LotLog)
 - **id** (INTEGER, PK)
 - **report_id** (INTEGER, FK → DailyReport.id, NOT NULL)
 - **lot_id** (VARCHAR(50), NOT NULL)
@@ -84,5 +84,5 @@
 - **scrapped** (INTEGER, NOT NULL, default = 0)
 - **imported_at** (DATETIME, NOT NULL, default = now)
 
-## 10. 系統設定 (Local Settings)
-- **handover_settings.json**：本機設定檔，保存 `auto_backup` 與 `backup_interval_days`
+## 10. システム設定 (Local Settings)
+- **handover_settings.json**：ローカル設定ファイル。`auto_backup` と `backup_interval_days` を保存

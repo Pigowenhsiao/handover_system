@@ -1,19 +1,19 @@
 ## ADDED Requirements
 
-### Requirement: Calendar date selection
-The system SHALL provide a calendar picker for all date fields and prevent manual text input.
+### Requirement: カレンダー日付選択
+The system SHALL 全ての日付フィールドにカレンダーピッカーを提供し、手入力を禁止する。
 
 #### Scenario: Daily report date
-- **GIVEN** the user is on the daily report page
-- **WHEN** the user selects a date
-- **THEN** the date is filled via the calendar picker only
+- **GIVEN** 利用者が日報ページにいる
+- **WHEN** 利用者が日付を選択する
+- **THEN** 日付はカレンダーピッカーでのみ入力される
 
 #### Scenario: Date filters
-- **GIVEN** the user is on delay list or summary actual pages
-- **WHEN** the user selects start/end dates
-- **THEN** the fields are populated via the calendar picker
+- **GIVEN** 利用者が Delay List または Summary Actual ページにいる
+- **WHEN** 開始/終了日を選択する
+- **THEN** 日付はカレンダーピッカーで入力される
 
 #### Scenario: Edit dialogs
-- **GIVEN** the user edits a delay or summary actual row
-- **WHEN** the user updates the date
-- **THEN** the date is selected via the calendar picker
+- **GIVEN** Delay または Summary Actual の行を編集する
+- **WHEN** 日付を更新する
+- **THEN** 日付はカレンダーピッカーで選択される

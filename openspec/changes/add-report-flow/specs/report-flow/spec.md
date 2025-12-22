@@ -1,47 +1,47 @@
 ## ADDED Requirements
 
-### Requirement: Login-first flow
-The system SHALL present a single login screen before any other UI is accessible.
+### Requirement: ログイン優先フロー
+The system SHALL いかなる UI よりも先に単一のログイン画面を表示する。
 
 #### Scenario: User not logged in
-- **GIVEN** the application is launched
-- **WHEN** the user has not logged in
-- **THEN** only the login screen is accessible and navigation is disabled
+- **GIVEN** アプリが起動した
+- **WHEN** ユーザーが未ログイン
+- **THEN** ログイン画面のみ利用可能で、ナビゲーションは無効化される
 
 #### Scenario: Successful login
-- **GIVEN** the user enters valid credentials
-- **WHEN** the login is confirmed
-- **THEN** the system shows the basic information screen
+- **GIVEN** ユーザーが正しい認証情報を入力した
+- **WHEN** ログインが確認された
+- **THEN** システムは基本情報画面を表示する
 
-### Requirement: Basic information gating
-The system SHALL require date, shift, and area to be saved before enabling other functions.
+### Requirement: 基本情報ゲート
+The system SHALL 日付/シフト/エリアの保存が完了するまで他機能を有効化しない。
 
 #### Scenario: Access blocked before basic info
-- **GIVEN** basic information is not saved
-- **WHEN** the user attempts to open attendance, equipment, or lot pages
-- **THEN** the system blocks the action and shows a warning
+- **GIVEN** 基本情報が未保存
+- **WHEN** ユーザーが出勤/設備/ロットのページを開こうとする
+- **THEN** システムは操作をブロックし警告を表示する
 
 #### Scenario: Access allowed after save
-- **GIVEN** basic information is saved
-- **WHEN** the user opens other pages
-- **THEN** the pages are enabled and the current report context is displayed
+- **GIVEN** 基本情報が保存済み
+- **WHEN** ユーザーが他ページを開く
+- **THEN** ページが有効化され、現在の日報コンテキストが表示される
 
-### Requirement: Report context display
-The system SHALL display the current report context (date/shift/area) on every page.
+### Requirement: 日報コンテキストの表示
+The system SHALL 全ページに現在の日報コンテキスト（日付/シフト/エリア）を表示する。
 
 #### Scenario: Context updates
-- **WHEN** the user changes date, shift, or area
-- **THEN** the displayed context updates immediately
+- **WHEN** ユーザーが日付/シフト/エリアを変更した
+- **THEN** 表示中のコンテキストが即時更新される
 
-### Requirement: Data linking to DailyReport
-The system SHALL persist attendance, equipment, and lot records with the corresponding DailyReport via report_id.
+### Requirement: DailyReport への紐付け
+The system SHALL 出勤/設備/ロットの記録を DailyReport に report_id で紐付けて保存する。
 
 #### Scenario: Attendance save
-- **GIVEN** a saved DailyReport context
-- **WHEN** attendance data is saved
-- **THEN** attendance records are stored with report_id
+- **GIVEN** DailyReport が保存済み
+- **WHEN** 出勤データを保存する
+- **THEN** 出勤記録は report_id 付きで保存される
 
 #### Scenario: Equipment and lot add
-- **GIVEN** a saved DailyReport context
-- **WHEN** equipment or lot records are added
-- **THEN** each record is stored with report_id
+- **GIVEN** DailyReport が保存済み
+- **WHEN** 設備またはロット記録を追加する
+- **THEN** 各記録は report_id 付きで保存される

@@ -1,40 +1,40 @@
-# 開發任務清單 (Tasks)
+# 開発タスクリスト (Tasks)
 
-## 專案：電子交接本系統 (Handover System)
+## プロジェクト：電子引き継ぎシステム
 
-此清單對齊現行單機桌面版，標記已完成的核心功能與後續維護項目。
+本リストは現行の単機デスクトップ版に合わせた完了状況と保守項目を示します。
 
-## Phase 1: 基礎設施 (Infrastructure)
-- [x] SQLite + SQLAlchemy 連線與模型建立 (`models.py`)
-- [x] 初始化管理員與預設班別/區域
-- [x] 本機設定檔讀寫 (`handover_settings.json`)
+## Phase 1: 基盤 (Infrastructure)
+- [x] SQLite + SQLAlchemy 接続とモデル定義 (`models.py`)
+- [x] 管理者と既定のシフト/エリア初期化
+- [x] ローカル設定の読み書き (`handover_settings.json`)
 
-## Phase 2: 核心功能 (Core Features)
-- [x] 登入流程與角色控制
-- [x] 基本資訊 (日期/班別/區域) 儲存門檻
-- [x] 日報表摘要欄位儲存
-- [x] 出勤記錄 (正職/契約同頁輸入)
-- [x] 設備異常記錄
-- [x] 異常批次記錄
-- [x] Delay List / Summary Actual 匯入與上傳
+## Phase 2: コア機能 (Core Features)
+- [x] ログインフローと権限制御
+- [x] 基本情報 (日付/シフト/エリア) の保存ゲート
+- [x] 日報サマリー欄の保存
+- [x] 出勤記録 (正社員/契約社員を同ページ入力)
+- [x] 設備異常記録
+- [x] 異常ロット記録
+- [x] Delay List / Summary Actual のインポートとアップロード
 
-## Phase 3: 介面與統計 (UI & Analytics)
-- [x] 現代化側邊欄 UI (`modern_main_frame.py`)
-- [x] 多語切換與語言資源管理
-- [x] 出勤統計表 + 折線圖 + 堆疊柱狀圖
-- [x] 異常歷史查詢 (設備/批次)
-- [x] 頁面滾動與一致化版面
+## Phase 3: UI と統計 (UI & Analytics)
+- [x] モダンなサイドバー UI (`modern_main_frame.py`)
+- [x] 多言語切替と言語リソース管理
+- [x] 出勤統計表 + 折線図 + 積み上げ棒グラフ
+- [x] 異常履歴照会（設備/ロット）
+- [x] 画面スクロールとレイアウト統一
 
-## Phase 4: 系統管理 (Admin)
-- [x] 使用者管理 (新增/更新/刪除/重設密碼)
-- [x] 翻譯資源管理 (匯入/匯出)
-- [x] 班別/區域管理
-- [x] 系統設定 (備份間隔)
+## Phase 4: システム管理 (Admin)
+- [x] ユーザー管理 (追加/更新/削除/パスワードリセット)
+- [x] 翻訳リソース管理（インポート/エクスポート）
+- [x] シフト/エリア管理
+- [x] システム設定（バックアップ間隔）
 
-## Phase 5: 測試與封裝 (Testing & Packaging)
-- [x] 測試腳本結構 (`tests/`)
-- [x] 打包腳本 (`scripts/build_executable.py`)
+## Phase 5: テストとパッケージ (Testing & Packaging)
+- [x] テストスクリプトの整備 (`tests/`)
+- [x] パッケージスクリプト (`scripts/build_executable.py`)
 
-## Phase 6: 文件 (Documentation)
-- [x] README / Quickstart / Spec 文件對齊現況
-- [x] 使用者與管理者操作手冊
+## Phase 6: ドキュメント (Documentation)
+- [x] README / Quickstart / Spec を現況に合わせ更新
+- [x] 利用者・管理者マニュアル

@@ -737,7 +737,7 @@ class ModernMainFrame:
     def _update_status_bar_info(self):
         if not hasattr(self, "status_info_label"):
             return
-        version_text = self._t("header.version", "Version 2.2")
+        version_text = self._t("header.version", "Version 2.2.1")
         db_label = self._t("settings.databasePath", "Database Path:")
         db_path = str(get_database_path())
         info_text = f"{version_text} | {db_label} {db_path} | Create by Pigo Hsiao"
@@ -797,9 +797,20 @@ class ModernMainFrame:
         """創建日報表頁面"""
         self._register_text(self.page_title, "pages.dailyReport.title", "日報表", scope="page")
         self._register_text(self.page_subtitle, "pages.dailyReport.subtitle", "記錄每日生產交接資訊", scope="page")
-        
+
+        page_wrapper = ttk.Frame(self.page_content, style='Modern.TFrame')
+        page_wrapper.pack(fill='both', expand=True)
+        page_wrapper.rowconfigure(0, weight=1)
+        page_wrapper.columnconfigure(0, weight=1)
+
+        scroll_container = ttk.Frame(page_wrapper, style='Modern.TFrame')
+        scroll_container.grid(row=0, column=0, sticky='nsew')
+
+        self._daily_scroll_setup(scroll_container)
+        content_parent = self.daily_scroll_frame
+
         # 日期與班別卡片
-        date_card = self.create_card(self.page_content, '📅', "cards.dateShift", "日期與班別資訊")
+        date_card = self.create_card(content_parent, '📅', "cards.dateShift", "日期與班別資訊")
         date_card.pack(fill='x', padx=0, pady=(0, 20))
         
         # 表單布局
@@ -853,7 +864,7 @@ class ModernMainFrame:
         self._sync_report_context_from_form()
         
         # 基本信息卡片
-        basic_card = self.create_card(self.page_content, '📝', "cards.basicSummary", "基本資訊與摘要")
+        basic_card = self.create_card(content_parent, '📝', "cards.basicSummary", "基本資訊與摘要")
         basic_card.pack(fill='both', expand=True, padx=0, pady=(0, 20))
         
         # Key Machine Output
@@ -879,17 +890,55 @@ class ModernMainFrame:
         self.countermeasures_text = tk.Text(basic_card, height=4, font=('Segoe UI', 10), relief='flat', bg=self.COLORS['surface'], wrap="word")
         self._register_text_widget(self.countermeasures_text)
         self.countermeasures_text.pack(fill='x', padx=self.layout["card_pad"], pady=(0, 20))
-        
-        # 操作按鈕
-        button_frame = ttk.Frame(basic_card, style='Card.TFrame')
-        button_frame.pack(fill='x', padx=self.layout["card_pad"], pady=(0, 20))
-        
-        save_btn = ttk.Button(button_frame, style='Primary.TButton', command=self.save_daily_report)
+
+
+        # 底部固定操作列
+        footer = ttk.Frame(page_wrapper, style='Toolbar.TFrame')
+        footer.grid(row=1, column=0, sticky='ew')
+        footer.columnconfigure(0, weight=1)
+
+        footer_sep = ttk.Separator(footer, orient='horizontal', style='Line.TSeparator')
+        footer_sep.pack(fill='x')
+
+        footer_buttons = ttk.Frame(footer, style='Toolbar.TFrame')
+        footer_buttons.pack(fill='x', padx=self.layout["card_pad"], pady=(10, 12))
+
+        save_btn = ttk.Button(footer_buttons, style='Primary.TButton', command=self.save_daily_report)
         self._register_text(save_btn, "actions.saveDailyReport", "💾 儲存日報", scope="page")
         save_btn.pack(side='left')
-        reset_btn = ttk.Button(button_frame, style='Accent.TButton', command=self.reset_daily_report)
+        reset_btn = ttk.Button(footer_buttons, style='Accent.TButton', command=self.reset_daily_report)
         self._register_text(reset_btn, "actions.resetDailyReport", "🔄 重置", scope="page")
         reset_btn.pack(side='left', padx=(10, 0))
+
+    def _daily_scroll_setup(self, parent):
+        self.daily_scroll_canvas = tk.Canvas(
+            parent,
+            highlightthickness=0,
+            bd=0
+        )
+        self._register_canvas_widget(self.daily_scroll_canvas, "background")
+        self.daily_scroll_canvas.grid(row=0, column=0, sticky="nsew")
+        scroll = ttk.Scrollbar(parent, orient="vertical", command=self.daily_scroll_canvas.yview)
+        scroll.grid(row=0, column=1, sticky="ns")
+        parent.rowconfigure(0, weight=1)
+        parent.columnconfigure(0, weight=1)
+        self.daily_scroll_canvas.configure(yscrollcommand=scroll.set)
+        self.daily_scroll_frame = ttk.Frame(self.daily_scroll_canvas, style='Modern.TFrame')
+        self.daily_scroll_window = self.daily_scroll_canvas.create_window(
+            (0, 0),
+            window=self.daily_scroll_frame,
+            anchor="nw"
+        )
+
+        def _on_frame_config(_event):
+            self.daily_scroll_canvas.configure(scrollregion=self.daily_scroll_canvas.bbox("all"))
+
+        def _on_canvas_config(event):
+            self.daily_scroll_canvas.itemconfigure(self.daily_scroll_window, width=event.width)
+
+        self.daily_scroll_frame.bind("<Configure>", _on_frame_config)
+        self.daily_scroll_canvas.bind("<Configure>", _on_canvas_config)
+        self._bind_canvas_mousewheel(self.daily_scroll_frame, self.daily_scroll_canvas)
     
     def create_card(self, parent, emoji, title_key, title_default):
         """創建卡片容器"""

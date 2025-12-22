@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-電子交接系統 - 現代化介面啟動腳本
-使用全新的 Material Design 風格介面
+電子引き継ぎシステム - モダンUI起動スクリプト
+新しい Material Design 風UIを使用
 """
 
 import sys
@@ -19,10 +19,10 @@ from frontend.main import LanguageManager
 
 
 def main():
-    """主函數"""
+    """メイン関数"""
     # 創建主視窗
     root = tk.Tk()
-    root.title("電子交接系統 v2.0 - 現代化介面")
+    root.title("電子引き継ぎシステム v2.2.1 - モダンUI")
     root.geometry("1300x800")
     
     # 設置窗口圖示（如果有）
@@ -42,10 +42,10 @@ def main():
     modern_frame = ModernMainFrame(root, lang_manager)
     
     # 啟動主循環
-    print("🚀 電子交接系統現代化介面已啟動")
-    print("📌 窗口尺寸: 1300x800")
-    print("📌 默認語言: 中文")
-    print("💡 提示: 使用左側導航欄切換功能頁面")
+    print("🚀 電子引き継ぎシステムのモダンUIを起動しました")
+    print("📌 ウィンドウサイズ: 1300x800")
+    print("📌 デフォルト言語: 中文")
+    print("💡 ヒント: 左側のナビゲーションで機能ページを切り替え")
     
     root.mainloop()
 

@@ -1,9 +1,9 @@
 ## 1. Implementation
-- [x] 新增共用日曆選擇器元件，提供日期選擇回寫
-- [x] 日報表日期欄位改為日曆選擇器
-- [x] 延遲清單與 Summary Actual 的日期篩選欄位改為日曆選擇器
-- [x] 延遲清單與 Summary Actual 編輯視窗日期欄位改為日曆選擇器
-- [x] 更新多語系文字
+- [x] 共通カレンダー選択コンポーネントを追加
+- [x] 日報の日付欄をカレンダー選択へ変更
+- [x] Delay List / Summary Actual の期間欄をカレンダー選択へ変更
+- [x] Delay List / Summary Actual の編集ダイアログ日付欄をカレンダー選択へ変更
+- [x] 多言語文言の更新
 
 ## 2. Validation
-- [ ] 手動驗證日報表、延遲清單、Summary Actual 的日期只能以日曆選擇
+- [ ] 日報/Delay List/Summary Actual の日付がカレンダー選択のみで入力可能か手動確認

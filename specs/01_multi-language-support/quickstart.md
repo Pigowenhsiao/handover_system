@@ -1,24 +1,24 @@
-# 多語言支持 - 快速入門
+# 多言語対応 - クイックスタート
 
-## 1. 語言資源位置
+## 1. 言語リソースの場所
 - `frontend/public/locales/ja.json`
 - `frontend/public/locales/zh.json`
 - `frontend/public/locales/en.json`
 
-## 2. 使用 LanguageManager
+## 2. LanguageManager の使用
 
 ```python
 from frontend.main import LanguageManager
 
 lang_manager = LanguageManager()
 lang_manager.set_language("zh")
-text = lang_manager.get_text("common.save", "儲存")
+text = lang_manager.get_text("common.save", "保存")
 ```
 
-## 3. 介面更新
-- 語言切換後呼叫各頁面的 `update_language()`
-- 缺少翻譯鍵時使用預設文字
+## 3. UI 更新
+- 言語切替後に各ページの `update_language()` を呼び出す
+- 翻訳キーが欠落した場合は既定文言を使用
 
-## 4. 管理員維護
-- 透過管理頁面匯入/匯出 JSON
-- 匯出後覆蓋 `frontend/public/locales/*.json`
+## 4. 管理者による維持
+- 管理画面から JSON をインポート/エクスポート
+- エクスポート後に `frontend/public/locales/*.json` を上書き

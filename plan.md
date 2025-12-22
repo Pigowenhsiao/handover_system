@@ -1,49 +1,49 @@
-# 實施計劃 (Implementation Plan)
+# 実施計画 (Implementation Plan)
 
 ## 1. 技術背景 (Technical Context)
-- **應用形式**: 單機桌面應用程式 (無前後端 API)
-- **UI 框架**: Python tkinter
-- **資料庫**: SQLite + SQLAlchemy
-- **多語言**: JSON 語言資源檔 + LanguageManager
-- **認證**: bcrypt 密碼雜湊
-- **報表匯入**: pandas / openpyxl
-- **圖表**: matplotlib (出勤統計)
+- **アプリ形態**: 単機デスクトップアプリ（前後端 API なし）
+- **UI フレームワーク**: Python Tkinter
+- **データベース**: SQLite + SQLAlchemy
+- **多言語**: JSON 言語リソース + LanguageManager
+- **認証**: bcrypt パスワードハッシュ
+- **レポート取込**: pandas / openpyxl
+- **チャート**: matplotlib（出勤統計）
 - **設定保存**: `handover_settings.json`
 
-## 2. 憲法檢查 (Constitution Check)
-根據專案憲法原則，本計劃需確保：
-- 代碼品質：介面與資料邏輯結構清楚、可讀
-- 安全性：密碼雜湊與管理員權限控制
-- 可擴展性：模組化頁面，便於新增或調整頁面
-- 可維護性：文件與語言資源維護一致
-- 數據保護：SQLite 資料可備份、可復原
+## 2. 憲法チェック (Constitution Check)
+本計画は以下を満たす必要があります：
+- コード品質：UI とデータ処理の構造が明確で可読性が高いこと
+- セキュリティ：パスワードハッシュと管理者権限制御
+- 拡張性：ページのモジュール化による変更容易性
+- 保守性：ドキュメントと翻訳リソースの一貫性
+- データ保護：SQLite のバックアップ/復旧が可能
 
-## 3. 評估門檻 (Gates)
-- [x] 資料模型符合需求規格
-- [x] 日報表與出勤/異常資料關聯一致
-- [x] 多語言與文案維護流程明確
-- [x] 單機部署與備份流程可行
+## 3. 評価ゲート (Gates)
+- [x] データモデルが要件に適合
+- [x] 日報と出勤/異常データの関連が一貫
+- [x] 多言語と文言管理の流れが明確
+- [x] 単機配布とバックアップ手順が成立
 
-## 4. 第一階段：研究與決策 (Phase 0)
-本階段已完成，研究結果記錄於 `research.md`：
-- 選用 tkinter + SQLite 架構
-- 多語言採 JSON 資源檔
-- 圖表採 matplotlib
+## 4. 第1段階：調査と意思決定 (Phase 0)
+調査結果は `research.md` に記録済み：
+- tkinter + SQLite 構成を採用
+- 多言語は JSON リソースを採用
+- チャートは matplotlib を採用
 
-## 5. 第二階段：設計與合約 (Phase 1)
-- 數據模型記錄於 `data-model.md`
-- 介面與流程說明記錄於 `quickstart.md`
-- 內部介面與資料存取約定記錄於 `contracts/api-contracts.md`
+## 5. 第2段階：設計と契約 (Phase 1)
+- データモデル：`data-model.md`
+- 画面/フロー：`quickstart.md`
+- 内部インターフェース：`contracts/api-contracts.md`
 
-## 6. 實施任務 (Implementation Tasks)
-詳細任務與當前狀態記錄於 `tasks.md`。
+## 6. 実装タスク (Implementation Tasks)
+詳細タスクと状況は `tasks.md` に記載。
 
-## 7. 測試策略 (Testing Strategy)
-- 單元測試：核心資料存取與驗證
-- 整合測試：登入 → 基本資訊 → 功能填寫流程
-- 可用性測試：多語切換與操作一致性
+## 7. テスト戦略 (Testing Strategy)
+- 単体テスト：コアのデータ処理と検証
+- 統合テスト：ログイン → 基本情報 → 機能入力の流れ
+- 使いやすさテスト：多言語切替と操作の一貫性
 
-## 8. 部署考量 (Deployment Considerations)
-- 使用 PyInstaller 打包為可執行檔
-- SQLite/JSON 設定檔需納入備份
-- 初次啟動需初始化資料庫與管理員帳號
+## 8. 配布/導入 (Deployment Considerations)
+- PyInstaller で実行ファイル化（`pyinstaller handover_modern.spec`）
+- SQLite/JSON 設定ファイルをバックアップ対象に含める
+- 初回起動時に DB と管理者アカウントを初期化

@@ -1,15 +1,15 @@
-# Design Notes: Report Flow & Linking
+# Design Notes: 日報フローと紐付け
 
 ## Flow
-- App 啟動後顯示登入畫面，成功登入後進入「基本資訊」畫面。
-- 未保存基本資訊（日期/班別/區域）時，其他頁面與功能按鈕停用。
-- 保存基本資訊後，建立/更新 DailyReport 並記錄 report_id，解鎖其他頁面。
+- 起動後にログイン画面を表示し、成功後に「基本情報」画面へ。
+- 基本情報（日付/シフト/エリア）未保存の間は他ページと機能ボタンを無効化。
+- 基本情報保存後に DailyReport を作成/更新し report_id を保持、他ページを解放。
 
 ## Data Linking
-- AttendanceEntry / EquipmentLog / LotLog 全部以 report_id 對應 DailyReport。
-- 出勤儲存採 upsert：同一 report_id 下的 Regular/Contract 寫入或覆寫。
-- 設備異常與批次新增寫入新記錄；歷史查詢依 report_id 篩選。
+- AttendanceEntry / EquipmentLog / LotLog を report_id で DailyReport に紐づけ。
+- 出勤保存は upsert：同一 report_id の Regular/Contract を書込/上書き。
+- 設備異常/ロット異常は新規レコードとして追加し、履歴は report_id で参照。
 
 ## UI
-- 頁首右側顯示目前日報資訊（日期/班別/區域）。
-- 基本資訊保存成功時顯示提示與 report_id。
+- 画面右上に現在の日報情報（日付/シフト/エリア）を表示。
+- 基本情報保存成功時に通知と report_id を表示。

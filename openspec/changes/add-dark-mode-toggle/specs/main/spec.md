@@ -1,22 +1,22 @@
 ## ADDED Requirements
-### Requirement: Light/Dark theme toggle
-系統 SHALL 在主畫面提供明亮/黑暗主題切換，並即時套用於主要介面元件以提升可讀性。
+### Requirement: ライト/ダークテーマ切替
+システム SHALL 主画面にライト/ダークのテーマ切替を提供し、主要 UI 要素へ即時適用して可読性を高める。
 
 #### Scenario: Switch to dark theme
-- **WHEN** 使用者點擊主題切換按鈕切換至黑暗模式
-- **THEN** 介面背景、文字與主要控制項樣式即時更新為黑暗主題
+- **WHEN** ユーザーがテーマ切替ボタンでダークモードに切替
+- **THEN** 背景/文字/主要コントロールの配色が即時にダークテーマへ更新される
 
 #### Scenario: Switch to light theme
-- **WHEN** 使用者再次點擊主題切換按鈕切換回明亮模式
-- **THEN** 介面樣式即時回復為明亮主題
+- **WHEN** ユーザーが再度ボタンを押しライトモードに切替
+- **THEN** 画面配色が即時にライトテーマへ戻る
 
-### Requirement: Theme preference persistence
-系統 SHALL 儲存使用者上次選擇的主題並在下次啟動時套用該主題（預設為明亮模式）。
+### Requirement: テーマ設定の保存
+システム SHALL 選択したテーマを保存し、次回起動時に適用する（既定はライト）。
 
 #### Scenario: Persist selected theme
-- **WHEN** 使用者切換主題
-- **THEN** 系統將主題偏好寫入本機設定檔
+- **WHEN** ユーザーがテーマを切替
+- **THEN** テーマ設定がローカル設定に保存される
 
 #### Scenario: Restore theme on startup
-- **WHEN** 系統啟動且設定檔中存在主題偏好
-- **THEN** 介面以該主題初始化
+- **WHEN** 起動時に設定ファイルにテーマが存在する
+- **THEN** そのテーマで UI を初期化する

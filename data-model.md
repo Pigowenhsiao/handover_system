@@ -1,22 +1,22 @@
-# 數據模型 (Data Model)
+# データモデル (Data Model)
 
-本系統為單機桌面版，資料儲存在 SQLite (`data/handover_system.db`)。
+本システムは単機デスクトップ版で、データは SQLite（`data/handover_system.db`）に保存します。
 
-## 1. 使用者 (users)
+## 1. ユーザー (users)
 - **id** (INTEGER, PK)
 - **username** (VARCHAR(50), UNIQUE, NOT NULL)
 - **password_hash** (VARCHAR(128), NOT NULL)
 - **role** (VARCHAR(20), NOT NULL, default = 'user')
 
-## 2. 班別選項 (shift_options)
+## 2. シフト選択 (shift_options)
 - **id** (INTEGER, PK)
 - **name** (VARCHAR(50), UNIQUE, NOT NULL)
 
-## 3. 區域選項 (area_options)
+## 3. エリア選択 (area_options)
 - **id** (INTEGER, PK)
 - **name** (VARCHAR(50), UNIQUE, NOT NULL)
 
-## 4. 日報表 (daily_reports)
+## 4. 日報 (daily_reports)
 - **id** (INTEGER, PK)
 - **date** (DATE, NOT NULL)
 - **shift** (VARCHAR(20), NOT NULL)
@@ -27,7 +27,7 @@
 - **summary_issues** (TEXT, NOT NULL, default = '')
 - **summary_countermeasures** (TEXT, NOT NULL, default = '')
 
-## 5. 出勤記錄 (attendance_entries)
+## 5. 出勤記録 (attendance_entries)
 - **id** (INTEGER, PK)
 - **report_id** (INTEGER, FK → daily_reports.id)
 - **category** (VARCHAR(20), NOT NULL) 例：Regular / Contract
@@ -46,7 +46,7 @@
 - **action_taken** (TEXT, NOT NULL, default = '')
 - **image_path** (VARCHAR(255), NULL)
 
-## 7. 異常批次 (lot_logs)
+## 7. 異常ロット (lot_logs)
 - **id** (INTEGER, PK)
 - **report_id** (INTEGER, FK → daily_reports.id)
 - **lot_id** (VARCHAR(50), NOT NULL, default = '')
@@ -84,11 +84,10 @@
 - **scrapped** (INTEGER, NOT NULL, default = 0)
 - **imported_at** (DATETIME, NOT NULL, default = now)
 
-## 10. 本機設定 (handover_settings.json)
+## 10. ローカル設定 (handover_settings.json)
 - **auto_backup** (BOOLEAN)
 - **backup_interval_days** (INTEGER)
 
-## 11. 關聯摘要
+## 11. 関連関係
 - users 1 → N daily_reports
 - daily_reports 1 → N attendance_entries / equipment_logs / lot_logs
-

@@ -5,7 +5,7 @@
     "login": "Login",
     "logout": "Logout",
     "subtitle": "Handover Management System",
-    "version": "Version 2.2"
+    "version": "Version 2.2.1"
   },
   "navigation": {
     "home": "Home",
