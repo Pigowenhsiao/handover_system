@@ -96,9 +96,9 @@ class MainApplicationFrame:
         ttk.Label(date_frame, text="班別:").grid(row=0, column=2, sticky=tk.W, padx=5, pady=5)
         self.shift_var = tk.StringVar(value="Day")
         shift_combo = ttk.Combobox(
-            date_frame, 
+            date_frame,
             textvariable=self.shift_var,
-            values=["Day", "Night"],
+            values=sorted(["Day", "Night"], key=str.lower),
             state="readonly"
         )
         shift_combo.grid(row=0, column=3, sticky=tk.W, padx=5, pady=5)
@@ -109,7 +109,7 @@ class MainApplicationFrame:
         area_combo = ttk.Combobox(
             date_frame,
             textvariable=self.area_var,
-            values=["etching_D", "etching_E", "litho", "thin_film"],
+            values=sorted(["etching_D", "etching_E", "litho", "thin_film"], key=str.lower),
             state="readonly"
         )
         area_combo.grid(row=0, column=5, sticky=tk.W, padx=5, pady=5)

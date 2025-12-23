@@ -64,7 +64,7 @@ class LoginScreen:
         self.lang_combo = ttk.Combobox(
             self.frame,
             textvariable=self.lang_var,
-            values=["日本語", "中文", "English"],
+            values=sorted(["日本語", "中文", "English"], key=str.lower),
             state="readonly",
             width=10
         )
@@ -893,7 +893,7 @@ class MainApplication:
         self.lang_combo = ttk.Combobox(
             lang_frame,
             textvariable=self.lang_var,
-            values=["日本語", "中文", "English"],
+            values=sorted(["日本語", "中文", "English"], key=str.lower),
             state="readonly",
             width=12
         )
@@ -1110,7 +1110,7 @@ class MainApplication:
         shift_combo = ttk.Combobox(
             date_frame,
             textvariable=self.shift_var,
-            values=["Day", "Night"],
+            values=sorted(["Day", "Night"], key=str.lower),
             state="readonly",
             width=10
         )
@@ -1122,7 +1122,7 @@ class MainApplication:
         area_combo = ttk.Combobox(
             date_frame,
             textvariable=self.area_var,
-            values=["etching_D", "etching_E", "litho", "thin_film"],
+            values=sorted(["etching_D", "etching_E", "litho", "thin_film"], key=str.lower),
             state="readonly",
             width=15
         )

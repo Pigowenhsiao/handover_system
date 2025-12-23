@@ -20,11 +20,7 @@
 - 標準ライブラリ優先、不要な外部依存は避ける。
 
 ### Entry Point
-<<<<<<< Updated upstream
-- モダン UI の起動入口は `run_modern_system.py`（推奨）。
-=======
 - 現代化介面啟動入口為 `handover_system.py`（建議使用）。
->>>>>>> Stashed changes
 
 ### Architecture Patterns
 - 単機デスクトップアプリ：UI/DB ともにローカル実行。
@@ -81,10 +77,4 @@
 - UI と DB は同一プロジェクト配下で配置。DB は `data/handover_system.db`。
 
 ## External Dependencies
-<<<<<<< Updated upstream
-- 外部 API なし。依存：SQLAlchemy、pandas、openpyxl、matplotlib、bcrypt（Tkinter は標準）。
-=======
 - 無外部 API 或服務；依賴本機套件：SQLAlchemy、pandas、openpyxl、matplotlib、bcrypt（Tkinter 為 Python 內建）。
-
-
->>>>>>> Stashed changes

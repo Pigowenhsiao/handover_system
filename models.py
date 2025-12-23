@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, date
 from pathlib import Path
+import json
 import sys
 import shutil
 from typing import Generator, Optional
@@ -23,6 +24,19 @@ def _get_data_dir() -> Path:
 
 def get_database_path() -> Path:
     db_path = _get_data_dir() / "handover_system.db"
+    settings_path = _get_app_root() / "handover_settings.json"
+    if settings_path.exists():
+        try:
+            data = json.loads(settings_path.read_text(encoding="utf-8"))
+            custom_path = data.get("database_path")
+            if custom_path:
+                custom = Path(custom_path)
+                if not custom.is_absolute():
+                    custom = (_get_app_root() / custom).resolve()
+                custom.parent.mkdir(parents=True, exist_ok=True)
+                db_path = custom
+        except Exception:
+            pass
     _maybe_migrate_database(db_path)
     return db_path
 
@@ -95,12 +109,20 @@ class DailyReport(Base):
     area: str = Column(String(50), nullable=False)
     author_id: int = Column(Integer, ForeignKey("users.id"), nullable=False)
     created_at: datetime = Column(DateTime, default=datetime.utcnow, nullable=False)
+    last_modified_by: Optional[str] = Column(String(100), nullable=True)
+    last_modified_at: Optional[datetime] = Column(DateTime, nullable=True)
     summary_key_output: str = Column(Text, default="", nullable=False)
     summary_issues: str = Column(Text, default="", nullable=False)
     summary_countermeasures: str = Column(Text, default="", nullable=False)
 
     author = relationship("User", back_populates="reports")
     attendance_entries = relationship("AttendanceEntry", back_populates="report", cascade="all, delete-orphan")
+    overtime_entry = relationship(
+        "OvertimeEntry",
+        back_populates="report",
+        cascade="all, delete-orphan",
+        uselist=False,
+    )
     equipment_logs = relationship("EquipmentLog", back_populates="report", cascade="all, delete-orphan")
     lot_logs = relationship("LotLog", back_populates="report", cascade="all, delete-orphan")
 
@@ -117,6 +139,18 @@ class AttendanceEntry(Base):
     reason: str = Column(Text, default="", nullable=False)
 
     report = relationship("DailyReport", back_populates="attendance_entries")
+
+
+class OvertimeEntry(Base):
+    __tablename__ = "overtime_entries"
+
+    id: int = Column(Integer, primary_key=True, index=True)
+    report_id: int = Column(Integer, ForeignKey("daily_reports.id"), nullable=False)
+    category: str = Column(String(20), default="", nullable=False)
+    count: int = Column(Integer, default=0, nullable=False)
+    notes: str = Column(Text, default="", nullable=False)
+
+    report = relationship("DailyReport", back_populates="overtime_entry")
 
 
 class EquipmentLog(Base):
@@ -198,6 +232,7 @@ def init_db(default_admin_username: str = "admin", default_admin_password: str =
     except Exception as exc:
         print(f"資料庫初始化失敗: {exc}")
         return
+    _ensure_daily_report_columns()
 
     from auth import hash_password  # local import to avoid circular dependency
 
@@ -225,3 +260,20 @@ def init_db(default_admin_username: str = "admin", default_admin_password: str =
             session.commit()
     except Exception as exc:
         print(f"建立預設管理員失敗: {exc}")
+
+
+def _ensure_daily_report_columns() -> None:
+    try:
+        with engine.begin() as conn:
+            rows = conn.exec_driver_sql("PRAGMA table_info(daily_reports)").fetchall()
+            existing = {row[1] for row in rows}
+            if "last_modified_by" not in existing:
+                conn.exec_driver_sql(
+                    "ALTER TABLE daily_reports ADD COLUMN last_modified_by VARCHAR(100)"
+                )
+            if "last_modified_at" not in existing:
+                conn.exec_driver_sql(
+                    "ALTER TABLE daily_reports ADD COLUMN last_modified_at DATETIME"
+                )
+    except Exception as exc:
+        print(f"資料庫欄位檢查失敗: {exc}")

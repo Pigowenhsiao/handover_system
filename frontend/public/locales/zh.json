@@ -17,7 +17,8 @@
     "attendance": "出勤記錄",
     "equipment": "設備異常",
     "lot": "異常批次",
-    "summary": "總結",
+    "summary": "人員出勤率",
+    "summaryQuery": "摘要查詢",
     "abnormalHistory": "異常歷史",
     "masterData": "基本資料管理",
     "delayList": "延遲清單",
@@ -151,8 +152,12 @@
       "subtitle": "記錄批次異常與處置狀況"
     },
     "summary": {
-      "title": "出勤統計",
-      "subtitle": "依日期區間彙整出勤資訊"
+      "title": "人員出勤率",
+      "subtitle": "依日期區間彙整出勤率"
+    },
+    "summaryQuery": {
+      "title": "摘要查詢",
+      "subtitle": "依起訖日/班別/區域查詢日報摘要"
     },
     "abnormalHistory": {
       "title": "異常歷史查詢",
@@ -160,7 +165,7 @@
     },
     "admin": {
       "title": "系統管理",
-      "subtitle": "管理使用者、翻譯資源與系統設定"
+      "subtitle": "管理使用者、班別/區域與系統設定"
     },
     "delayList": {
       "title": "延遲清單",
@@ -178,9 +183,9 @@
     "lotRecord": "異常批次記錄",
     "workSummary": "工作總結",
     "statsToday": "今日統計",
-    "attendanceSummary": "出勤統計",
-    "attendanceTable": "出勤統計表",
-    "attendanceCharts": "出勤圖表",
+    "attendanceSummary": "人員出勤率",
+    "attendanceTable": "人員出勤率統計表",
+    "attendanceCharts": "人員出勤率圖表",
     "abnormalHistorySearch": "異常歷史查詢",
     "abnormalEquipmentHistory": "設備異常歷史",
     "abnormalLotHistory": "異常批次歷史",
@@ -189,7 +194,9 @@
     "delayList": "延遲清單",
     "delayListTable": "延遲清單資料",
     "summaryActual": "Summary Actual",
-    "summaryActualTable": "Summary Actual 資料"
+    "summaryActualTable": "Summary Actual 資料",
+    "summaryQuery": "摘要查詢",
+    "summaryQueryTable": "摘要查詢結果"
   },
   "fields": {
     "date": "📅 日期:",
@@ -197,9 +204,22 @@
     "area": "🏭 區域:"
   },
   "summary": {
-    "keyOutput": "🔑 Key Machine Output:",
-    "issues": "⚠️ Key Issues:",
-    "countermeasures": "✅ Countermeasures:"
+    "keyOutput": "🔑 關鍵機台產出:",
+    "issues": "⚠️ 關鍵問題:",
+    "countermeasures": "✅ 對策:"
+  },
+  "summaryQuery": {
+    "startDate": "起日",
+    "endDate": "迄日",
+    "shift": "班別",
+    "area": "區域",
+    "date": "日期",
+    "keyOutput": "關鍵機台產出",
+    "keyIssues": "關鍵問題",
+    "countermeasures": "對策",
+    "missingRange": "請先選擇查詢起日與迄日。",
+    "invalidRange": "迄日不可早於起日。",
+    "loadFailed": "摘要查詢失敗：{error}"
   },
   "summaryDashboard": {
     "startDate": "統計開始日期",
@@ -213,6 +233,12 @@
     "regularAbsent": "正職缺勤",
     "contractPresent": "契約出勤",
     "contractAbsent": "契約缺勤",
+    "lastModified": "最後修改",
+    "update": "更新",
+    "updateSuccess": "更新完成",
+    "updateConflict": "該日期/班別/區域已存在其他日報，無法更新。",
+    "invalidShift": "請選擇有效班別",
+    "invalidArea": "請選擇有效區域",
     "present": "出勤",
     "absent": "缺勤",
     "rateLineTitle": "出勤率趨勢",
@@ -263,6 +289,8 @@
     "saveBackup": "確認",
     "invalidBackupInterval": "備份間隔需為正整數",
     "saved": "✅ 設定已儲存",
+    "selectDatabase": "選擇資料庫",
+    "databasePathUpdated": "資料庫路徑已更新。請重新啟動系統以套用新設定。",
     "saveFailed": "設定儲存失敗：{error}"
   },
   "stats": {
@@ -289,6 +317,12 @@
     "contractor_staff": "契約社員 (Contractor Staff)",
     "regular_short": "正職",
     "contractor_short": "契約",
+    "overtime_title": "加班",
+    "overtime_category": "類別",
+    "overtime_count": "人數",
+    "overtime_notes": "備註",
+    "overtime_regular": "正社員",
+    "overtime_contract": "契約社員",
     "validate": "驗證數據",
     "statistics": "統計",
     "rate": "出勤率",
@@ -302,6 +336,7 @@
     "error_regular_negative": "正社員：人數不能為負數",
     "error_contractor_exceeds": "契約社員：出勤({present}) + 欠勤({absent}) > 定員({scheduled})",
     "error_contractor_negative": "契約社員：人數不能為負數",
+    "error_overtime_negative": "加班人數不能為負數",
     "validation_summary_intro": "✅ 所有出勤數據輸入合理。",
     "validation_summary_regular": "正社員: 定員 {scheduled}, 出勤 {present}, 欠勤 {absent}, 出勤率 {rate:.1f}%",
     "validation_summary_contractor": "契約社員: 定員 {scheduled}, 出勤 {present}, 欠勤 {absent}, 出勤率 {rate:.1f}%",
@@ -349,6 +384,8 @@
     "userList": "使用者列表",
     "resetPassword": "重設密碼",
     "loadUsersFailed": "載入使用者資料失敗：{error}",
+    "userExists": "使用者名稱已存在",
+    "userCreateFailed": "新增使用者失敗：{error}",
     "tabMasterData": "🧩 班別/區域",
     "shiftManagement": "班別管理",
     "areaManagement": "區域管理",

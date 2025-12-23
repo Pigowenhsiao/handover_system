@@ -49,10 +49,11 @@ class LanguageSelector:
         self.language_var = tk.StringVar()
 
         # 創建下拉選單
+        language_values = sorted(self.language_options.values(), key=str.lower)
         self.combo = ttk.Combobox(
             self.frame,
             textvariable=self.language_var,
-            values=list(self.language_options.values()),
+            values=language_values,
             state="readonly",
             width=12
         )

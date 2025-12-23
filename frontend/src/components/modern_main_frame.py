@@ -18,7 +18,7 @@ from sqlalchemy.orm import joinedload
 # 導入現有組件
 from frontend.src.components.language_selector import LanguageSelector
 from frontend.main import LanguageManager
-from frontend.src.components.admin_section import UserManagementSection, TranslationManagementSection, MasterDataSection
+from frontend.src.components.admin_section import UserManagementSection, MasterDataSection
 from frontend.src.components.attendance_section_optimized import AttendanceSectionOptimized
 from auth import verify_password
 from models import (
@@ -28,6 +28,7 @@ from models import (
     User,
     DailyReport,
     AttendanceEntry,
+    OvertimeEntry,
     EquipmentLog,
     LotLog,
     ShiftOption,
@@ -620,7 +621,8 @@ class ModernMainFrame:
             ('attendance', '👥', "navigation.attendance", "出勤記錄"),
             ('equipment', '⚙️', "navigation.equipment", "設備異常"),
             ('lot', '📦', "navigation.lot", "異常批次"),
-            ('summary', '📊', "navigation.summary", "總結"),
+            ('summary', '📊', "navigation.summary", "人員出勤率"),
+            ('summary_query', '🔎', "navigation.summaryQuery", "摘要查詢"),
             ('abnormal_history', '🗂️', "navigation.abnormalHistory", "異常歷史"),
             ('delay_list', '⏱️', "navigation.delayList", "延遲清單"),
             ('summary_actual', '🧾', "navigation.summaryActual", "Summary Actual"),
@@ -784,6 +786,8 @@ class ModernMainFrame:
             self.create_lot_page()
         elif page_id == 'summary':
             self.create_summary_page()
+        elif page_id == 'summary_query':
+            self.create_summary_query_page()
         elif page_id == 'abnormal_history':
             self.create_abnormal_history_page()
         elif page_id == 'delay_list':
@@ -1009,11 +1013,11 @@ class ModernMainFrame:
             with SessionLocal() as db:
                 shifts = [opt.name for opt in db.query(ShiftOption).order_by(ShiftOption.id).all()]
                 areas = [opt.name for opt in db.query(AreaOption).order_by(AreaOption.id).all()]
-            self.shift_options = shifts or shift_defaults
-            self.area_options = areas or area_defaults
+            self.shift_options = sorted(shifts or shift_defaults, key=lambda v: str(v).lower())
+            self.area_options = sorted(areas or area_defaults, key=lambda v: str(v).lower())
         except Exception:
-            self.shift_options = shift_defaults
-            self.area_options = area_defaults
+            self.shift_options = sorted(shift_defaults, key=lambda v: str(v).lower())
+            self.area_options = sorted(area_defaults, key=lambda v: str(v).lower())
 
     def _build_shift_display_options(self):
         day_label = self._t("shift.day", "Day")
@@ -1074,6 +1078,33 @@ class ModernMainFrame:
             self.abnormal_area_var.set(current_area)
         else:
             self.abnormal_area_var.set(all_label)
+
+    def _update_summary_query_filter_options(self):
+        if not hasattr(self, "summary_query_shift_combo") or not hasattr(self, "summary_query_area_combo"):
+            return
+        if not self.summary_query_shift_combo.winfo_exists() or not self.summary_query_area_combo.winfo_exists():
+            return
+        self._load_shift_area_options()
+        all_labels = {"全部", "All", "すべて"}
+
+        shift_values = self._build_shift_display_options()
+        current_display = self.summary_query_shift_var.get().strip()
+        current_code = None
+        if current_display and current_display not in all_labels:
+            current_code = self.shift_code_map.get(current_display, current_display)
+        all_label = self._t("common.all", "全部")
+        self.summary_query_shift_combo["values"] = [all_label] + shift_values
+        if current_code and current_code in self.shift_display_map:
+            self.summary_query_shift_var.set(self.shift_display_map[current_code])
+        else:
+            self.summary_query_shift_var.set(all_label)
+
+        current_area = self.summary_query_area_var.get().strip()
+        self.summary_query_area_combo["values"] = [all_label] + self.area_options
+        if current_area in self.area_options:
+            self.summary_query_area_var.set(current_area)
+        else:
+            self.summary_query_area_var.set(all_label)
 
     def _create_date_picker(self, parent, var, width=16):
         entry = ttk.Entry(parent, textvariable=var, style='Modern.TEntry', width=width, state='normal')
@@ -1348,11 +1379,11 @@ class ModernMainFrame:
     
     def create_summary_page(self):
         """創建總結頁面"""
-        self._register_text(self.page_title, "pages.summary.title", "出勤統計", scope="page")
-        self._register_text(self.page_subtitle, "pages.summary.subtitle", "依日期區間彙整出勤資訊", scope="page")
+        self._register_text(self.page_title, "pages.summary.title", "人員出勤率", scope="page")
+        self._register_text(self.page_subtitle, "pages.summary.subtitle", "依日期區間彙整出勤率", scope="page")
 
         self._summary_scroll_setup()
-        control_card = self.create_card(self.summary_scroll_frame, '👥', "cards.attendanceSummary", "出勤統計")
+        control_card = self.create_card(self.summary_scroll_frame, '👥', "cards.attendanceSummary", "人員出勤率")
         control_card.pack(fill='x', pady=(0, 20))
 
         control_frame = ttk.Frame(control_card, style='Card.TFrame')
@@ -1386,7 +1417,7 @@ class ModernMainFrame:
         self.summary_dash_start_var.set(start_default)
         self.summary_dash_end_var.set(end_default)
 
-        table_card = self.create_card(self.summary_scroll_frame, '📋', "cards.attendanceTable", "出勤統計表")
+        table_card = self.create_card(self.summary_scroll_frame, '📋', "cards.attendanceTable", "人員出勤率表")
         table_card.pack(fill='both', expand=True, pady=(0, 20))
 
         table_frame = ttk.Frame(table_card, style='Card.TFrame')
@@ -1394,6 +1425,7 @@ class ModernMainFrame:
 
         cols = (
             "date",
+            "shift",
             "area",
             "author",
             "regular_present",
@@ -1401,10 +1433,12 @@ class ModernMainFrame:
             "contract_present",
             "contract_absent",
             "notes",
+            "last_modified",
         )
         self.summary_dash_columns = cols
         self.summary_dash_header_keys = [
             ("common.date", "日期"),
+            ("common.shift", "班別"),
             ("common.area", "區域"),
             ("common.author", "填寫者"),
             ("summaryDashboard.regularPresent", "正職出勤"),
@@ -1412,6 +1446,7 @@ class ModernMainFrame:
             ("summaryDashboard.contractPresent", "契約出勤"),
             ("summaryDashboard.contractAbsent", "契約缺勤"),
             ("common.notes", "備註"),
+            ("summaryDashboard.lastModified", "最後修改"),
         ]
 
         self.summary_dash_tree = ttk.Treeview(table_frame, columns=cols, show="headings", height=12)
@@ -1420,8 +1455,15 @@ class ModernMainFrame:
         table_scroll = ttk.Scrollbar(table_frame, orient="vertical", command=self.summary_dash_tree.yview)
         self.summary_dash_tree.configure(yscrollcommand=table_scroll.set)
         table_scroll.pack(side="right", fill="y")
+        self.summary_dash_tree.bind("<Double-1>", self._start_summary_dash_cell_edit)
 
-        charts_card = self.create_card(self.summary_scroll_frame, '📊', "cards.attendanceCharts", "出勤圖表")
+        update_frame = ttk.Frame(table_card, style='Card.TFrame')
+        update_frame.pack(fill='x', padx=self.layout["card_pad"], pady=(0, self.layout["card_pad"]))
+        update_btn = ttk.Button(update_frame, style='Primary.TButton', command=self._update_summary_dash_rows)
+        self._register_text(update_btn, "summaryDashboard.update", "更新", scope="page")
+        update_btn.pack(side='right')
+
+        charts_card = self.create_card(self.summary_scroll_frame, '📊', "cards.attendanceCharts", "人員出勤率圖表")
         charts_card.pack(fill='both', expand=True)
 
         charts_frame = ttk.Frame(charts_card, style='Card.TFrame')
@@ -1438,6 +1480,123 @@ class ModernMainFrame:
         self.summary_bar_canvas = None
         self.summary_dashboard_data = None
         self._render_summary_charts(None)
+
+    def create_summary_query_page(self):
+        """創建摘要查詢頁面"""
+        self._register_text(self.page_title, "pages.summaryQuery.title", "摘要查詢", scope="page")
+        self._register_text(
+            self.page_subtitle,
+            "pages.summaryQuery.subtitle",
+            "依條件查詢日報摘要",
+            scope="page",
+        )
+
+        control_card = self.create_card(self.page_content, '🔎', "cards.summaryQuery", "摘要查詢")
+        control_card.pack(fill='x', padx=0, pady=(0, 20))
+
+        control_frame = ttk.Frame(control_card, style='Card.TFrame')
+        control_frame.pack(fill='x', padx=self.layout["card_pad"], pady=self.layout["card_pad"])
+
+        start_label = ttk.Label(control_frame, font=('Segoe UI', 10))
+        self._register_text(start_label, "summaryQuery.startDate", "起日", scope="page")
+        start_label.grid(row=0, column=0, sticky='w', pady=self.layout["row_pad"])
+        self.summary_query_start_var = tk.StringVar()
+        summary_start_frame = ttk.Frame(control_frame, style='Card.TFrame')
+        summary_start_frame.grid(row=0, column=1, sticky='w', padx=(self.layout["field_gap"], 0), pady=self.layout["row_pad"])
+        self._create_date_picker(summary_start_frame, self.summary_query_start_var, width=14)
+
+        end_label = ttk.Label(control_frame, font=('Segoe UI', 10))
+        self._register_text(end_label, "summaryQuery.endDate", "迄日", scope="page")
+        end_label.grid(row=0, column=2, sticky='w', padx=(20, 0), pady=self.layout["row_pad"])
+        self.summary_query_end_var = tk.StringVar()
+        summary_end_frame = ttk.Frame(control_frame, style='Card.TFrame')
+        summary_end_frame.grid(row=0, column=3, sticky='w', padx=(self.layout["field_gap"], 0), pady=self.layout["row_pad"])
+        self._create_date_picker(summary_end_frame, self.summary_query_end_var, width=14)
+
+        search_btn = ttk.Button(control_frame, style='Accent.TButton', command=self._load_summary_query_records)
+        self._register_text(search_btn, "common.search", "搜尋", scope="page")
+        search_btn.grid(row=0, column=4, padx=(20, 0), pady=self.layout["row_pad"])
+
+        shift_label = ttk.Label(control_frame, font=('Segoe UI', 10))
+        self._register_text(shift_label, "summaryQuery.shift", "班別", scope="page")
+        shift_label.grid(row=1, column=0, sticky='w', pady=self.layout["row_pad"])
+        self.summary_query_shift_var = tk.StringVar()
+        self.summary_query_shift_combo = ttk.Combobox(
+            control_frame,
+            textvariable=self.summary_query_shift_var,
+            state='readonly',
+            width=16,
+        )
+        self.summary_query_shift_combo.grid(
+            row=1,
+            column=1,
+            sticky='w',
+            padx=(self.layout["field_gap"], 0),
+            pady=self.layout["row_pad"],
+        )
+
+        area_label = ttk.Label(control_frame, font=('Segoe UI', 10))
+        self._register_text(area_label, "summaryQuery.area", "區域", scope="page")
+        area_label.grid(row=1, column=2, sticky='w', padx=(20, 0), pady=self.layout["row_pad"])
+        self.summary_query_area_var = tk.StringVar()
+        self.summary_query_area_combo = ttk.Combobox(
+            control_frame,
+            textvariable=self.summary_query_area_var,
+            state='readonly',
+            width=16,
+        )
+        self.summary_query_area_combo.grid(
+            row=1,
+            column=3,
+            sticky='w',
+            padx=(self.layout["field_gap"], 0),
+            pady=self.layout["row_pad"],
+        )
+
+        start_default, end_default = self._get_month_date_range()
+        self.summary_query_start_var.set(start_default)
+        self.summary_query_end_var.set(end_default)
+        self._update_summary_query_filter_options()
+        self._apply_report_date_to_filters()
+
+        table_card = self.create_card(self.page_content, '📋', "cards.summaryQueryTable", "摘要查詢結果")
+        table_card.pack(fill='both', expand=True)
+
+        table_frame = ttk.Frame(table_card, style='Card.TFrame')
+        table_frame.pack(fill='both', expand=True, padx=self.layout["card_pad"], pady=self.layout["card_pad"])
+
+        cols = (
+            "date",
+            "shift",
+            "area",
+            "key_output",
+            "key_issues",
+            "countermeasures",
+        )
+        self.summary_query_columns = cols
+        self.summary_query_header_keys = [
+            ("summaryQuery.date", "日期"),
+            ("summaryQuery.shift", "班別"),
+            ("summaryQuery.area", "區域"),
+            ("summaryQuery.keyOutput", "Key Machine Output"),
+            ("summaryQuery.keyIssues", "Key Issues"),
+            ("summaryQuery.countermeasures", "Countermeasures"),
+        ]
+
+        self.summary_query_tree = ttk.Treeview(
+            table_frame,
+            columns=cols,
+            show="headings",
+            height=14,
+            selectmode="extended",
+        )
+        self._update_summary_query_headers()
+        self.summary_query_tree.pack(side='left', fill='both', expand=True)
+        summary_scroll = ttk.Scrollbar(table_frame, orient="vertical", command=self.summary_query_tree.yview)
+        self.summary_query_tree.configure(yscrollcommand=summary_scroll.set)
+        summary_scroll.pack(side="right", fill="y")
+
+        self._load_summary_query_records()
 
     def create_abnormal_history_page(self):
         """創建異常歷史查詢頁面"""
@@ -1651,6 +1810,7 @@ class ModernMainFrame:
             self.summary_dash_tree.heading(col, text=self._t(key, default))
         widths = {
             "date": 110,
+            "shift": 80,
             "area": 120,
             "author": 140,
             "regular_present": 90,
@@ -1658,9 +1818,11 @@ class ModernMainFrame:
             "contract_present": 90,
             "contract_absent": 90,
             "notes": 260,
+            "last_modified": 200,
         }
         anchors = {
             "date": "center",
+            "shift": "center",
             "area": "center",
             "author": "center",
             "regular_present": "center",
@@ -1668,9 +1830,15 @@ class ModernMainFrame:
             "contract_present": "center",
             "contract_absent": "center",
             "notes": "w",
+            "last_modified": "w",
         }
         for col in self.summary_dash_columns:
-            self.summary_dash_tree.column(col, width=widths.get(col, 100), stretch=(col == "notes"), anchor=anchors.get(col, "center"))
+            self.summary_dash_tree.column(
+                col,
+                width=widths.get(col, 100),
+                stretch=col in ("notes", "last_modified"),
+                anchor=anchors.get(col, "center"),
+            )
 
     def _update_abnormal_history_headers(self):
         if hasattr(self, "abnormal_equipment_tree"):
@@ -1726,6 +1894,186 @@ class ModernMainFrame:
             parts.append(f"{contract_label}: {contract_reason}")
         return " / ".join(parts)
 
+    def _format_last_modified_display(self, report):
+        if not report.last_modified_at:
+            return ""
+        timestamp = report.last_modified_at.strftime("%Y-%m-%d %H:%M")
+        if report.last_modified_by:
+            return f"{report.last_modified_by} @ {timestamp}"
+        return timestamp
+
+    def _start_summary_dash_cell_edit(self, event):
+        if not hasattr(self, "summary_dash_tree"):
+            return
+        row_id = self.summary_dash_tree.identify_row(event.y)
+        col_id = self.summary_dash_tree.identify_column(event.x)
+        if not row_id or not col_id:
+            return
+        col_index = int(col_id.replace("#", "")) - 1
+        if col_index < 0:
+            return
+        col_name = self.summary_dash_columns[col_index]
+        if col_name not in ("date", "shift", "area"):
+            return
+        values = list(self.summary_dash_tree.item(row_id, "values"))
+        if col_index >= len(values):
+            return
+        bbox = self.summary_dash_tree.bbox(row_id, col_id)
+        if not bbox:
+            return
+        x, y, width, height = bbox
+        self._end_summary_dash_cell_edit()
+        self._summary_dash_edit_target = (row_id, col_index)
+        self._summary_dash_edit_var = tk.StringVar(value=str(values[col_index]))
+
+        if col_name == "shift":
+            self._load_shift_area_options()
+            shift_values = self._build_shift_display_options()
+            entry = ttk.Combobox(
+                self.summary_dash_tree,
+                textvariable=self._summary_dash_edit_var,
+                values=shift_values,
+                state="readonly",
+            )
+            entry.bind("<<ComboboxSelected>>", self._commit_summary_dash_cell_edit)
+        elif col_name == "area":
+            self._load_shift_area_options()
+            entry = ttk.Combobox(
+                self.summary_dash_tree,
+                textvariable=self._summary_dash_edit_var,
+                values=self.area_options,
+                state="readonly",
+            )
+            entry.bind("<<ComboboxSelected>>", self._commit_summary_dash_cell_edit)
+        else:
+            entry = ttk.Entry(self.summary_dash_tree, textvariable=self._summary_dash_edit_var)
+            entry.bind("<Return>", self._commit_summary_dash_cell_edit)
+            entry.bind("<Escape>", self._cancel_summary_dash_cell_edit)
+            entry.bind("<FocusOut>", self._commit_summary_dash_cell_edit)
+
+        entry.place(x=x, y=y, width=width, height=height)
+        entry.focus_set()
+        entry.bind("<Return>", self._commit_summary_dash_cell_edit)
+        entry.bind("<Escape>", self._cancel_summary_dash_cell_edit)
+        entry.bind("<FocusOut>", self._commit_summary_dash_cell_edit)
+        self._summary_dash_edit_entry = entry
+
+    def _end_summary_dash_cell_edit(self):
+        entry = getattr(self, "_summary_dash_edit_entry", None)
+        if entry is not None and entry.winfo_exists():
+            entry.destroy()
+        self._summary_dash_edit_entry = None
+        self._summary_dash_edit_target = None
+        self._summary_dash_edit_var = None
+
+    def _cancel_summary_dash_cell_edit(self, _event=None):
+        self._end_summary_dash_cell_edit()
+
+    def _commit_summary_dash_cell_edit(self, _event=None):
+        if not getattr(self, "_summary_dash_edit_target", None):
+            return
+        row_id, col_index = self._summary_dash_edit_target
+        new_value = self._summary_dash_edit_var.get().strip() if self._summary_dash_edit_var else ""
+        values = list(self.summary_dash_tree.item(row_id, "values"))
+        if col_index < len(values):
+            values[col_index] = new_value
+            self.summary_dash_tree.item(row_id, values=values)
+        self._end_summary_dash_cell_edit()
+
+    def _update_summary_dash_rows(self):
+        if not hasattr(self, "summary_dash_tree"):
+            return
+        self._commit_summary_dash_cell_edit()
+        selections = self.summary_dash_tree.selection()
+        if not selections:
+            messagebox.showinfo(self._t("common.info", "資訊"), self._t("common.selectRow", "請先選擇一列"))
+            return
+
+        self._load_shift_area_options()
+        shift_display_values = set(self._build_shift_display_options())
+        date_idx = self.summary_dash_columns.index("date")
+        shift_idx = self.summary_dash_columns.index("shift")
+        area_idx = self.summary_dash_columns.index("area")
+
+        updated = 0
+        conflicts = 0
+        try:
+            with SessionLocal() as db:
+                for item_id in selections:
+                    try:
+                        report_id = int(item_id)
+                    except ValueError:
+                        continue
+                    values = list(self.summary_dash_tree.item(item_id, "values"))
+                    if not values:
+                        continue
+                    date_str = str(values[date_idx]).strip()
+                    shift_display = str(values[shift_idx]).strip()
+                    area_value = str(values[area_idx]).strip()
+                    try:
+                        new_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+                    except Exception:
+                        messagebox.showwarning(
+                            self._t("common.warning", "提醒"),
+                            self._t("errors.invalidDateFormat", "日期格式需為 YYYY-MM-DD"),
+                        )
+                        return
+                    if not shift_display or shift_display not in shift_display_values:
+                        messagebox.showwarning(
+                            self._t("common.warning", "提醒"),
+                            self._t("summaryDashboard.invalidShift", "請選擇有效班別"),
+                        )
+                        return
+                    if not area_value or area_value not in self.area_options:
+                        messagebox.showwarning(
+                            self._t("common.warning", "提醒"),
+                            self._t("summaryDashboard.invalidArea", "請選擇有效區域"),
+                        )
+                        return
+                    shift_code = self.shift_code_map.get(shift_display, shift_display)
+                    conflict = (
+                        db.query(DailyReport)
+                        .filter(
+                            DailyReport.date == new_date,
+                            DailyReport.shift == shift_code,
+                            DailyReport.area == area_value,
+                            DailyReport.id != report_id,
+                        )
+                        .first()
+                    )
+                    if conflict:
+                        conflicts += 1
+                        continue
+                    row = db.query(DailyReport).filter(DailyReport.id == report_id).first()
+                    if not row:
+                        continue
+                    row.date = new_date
+                    row.shift = shift_code
+                    row.area = area_value
+                    row.last_modified_by = (
+                        self.current_user.get("username") if self.current_user else ""
+                    )
+                    row.last_modified_at = datetime.now()
+                    updated += 1
+                if updated:
+                    db.commit()
+            if conflicts:
+                messagebox.showwarning(
+                    self._t("common.warning", "提醒"),
+                    self._t(
+                        "summaryDashboard.updateConflict",
+                        "該日期/班別/區域已存在其他日報，無法更新。",
+                    ),
+                )
+            if updated:
+                self._load_summary_dashboard()
+                messagebox.showinfo(
+                    self._t("common.success", "成功"),
+                    self._t("summaryDashboard.updateSuccess", "更新完成"),
+                )
+        except Exception as exc:
+            messagebox.showerror(self._t("common.error", "錯誤"), f"{exc}")
+
     def _load_summary_dashboard(self):
         if not hasattr(self, "summary_dash_tree"):
             return
@@ -1766,7 +2114,7 @@ class ModernMainFrame:
                     db.query(DailyReport)
                     .options(joinedload(DailyReport.author))
                     .filter(DailyReport.date >= start_date, DailyReport.date <= end_date)
-                    .order_by(DailyReport.date, DailyReport.area)
+                    .order_by(DailyReport.date, DailyReport.shift, DailyReport.area)
                     .all()
                 )
                 if not reports:
@@ -1825,8 +2173,10 @@ class ModernMainFrame:
                 self.summary_dash_tree.insert(
                     "",
                     "end",
+                    iid=str(report.id),
                     values=(
                         report.date.strftime("%Y-%m-%d"),
+                        self._format_shift_display(report.shift),
                         report.area,
                         author_name,
                         regular_present,
@@ -1834,6 +2184,7 @@ class ModernMainFrame:
                         contract_present,
                         contract_absent,
                         notes,
+                        self._format_last_modified_display(report),
                     ),
                 )
 
@@ -1921,7 +2272,12 @@ class ModernMainFrame:
                     equipment_query = equipment_query.filter(DailyReport.shift == shift_code)
                 if area_value:
                     equipment_query = equipment_query.filter(DailyReport.area == area_value)
-                equipment_rows = equipment_query.order_by(DailyReport.date.desc(), DailyReport.area, EquipmentLog.id).all()
+                equipment_rows = equipment_query.order_by(
+                    DailyReport.date,
+                    DailyReport.area,
+                    DailyReport.shift,
+                    EquipmentLog.id,
+                ).all()
 
                 lot_query = (
                     db.query(LotLog)
@@ -1933,7 +2289,12 @@ class ModernMainFrame:
                     lot_query = lot_query.filter(DailyReport.shift == shift_code)
                 if area_value:
                     lot_query = lot_query.filter(DailyReport.area == area_value)
-                lot_rows = lot_query.order_by(DailyReport.date.desc(), DailyReport.area, LotLog.id).all()
+                lot_rows = lot_query.order_by(
+                    DailyReport.date,
+                    DailyReport.area,
+                    DailyReport.shift,
+                    LotLog.id,
+                ).all()
 
             for row in equipment_rows:
                 report = row.report
@@ -2348,7 +2709,7 @@ class ModernMainFrame:
     def create_admin_page(self):
         """創建管理員頁面"""
         self._register_text(self.page_title, "pages.admin.title", "系統管理", scope="page")
-        self._register_text(self.page_subtitle, "pages.admin.subtitle", "管理使用者、翻譯資源與系統設定", scope="page")
+        self._register_text(self.page_subtitle, "pages.admin.subtitle", "管理使用者與系統設定", scope="page")
         
         # 創建 Notebook 分頁
         self.admin_notebook = ttk.Notebook(self.page_content, style='Modern.TNotebook')
@@ -2361,13 +2722,6 @@ class ModernMainFrame:
         self.admin_user_mgmt = UserManagementSection(user_tab, self.lang_manager)
         self.admin_user_mgmt.get_widget().pack(fill='both', expand=True, padx=20, pady=20)
         
-        # 翻譯管理分頁
-        translation_tab = ttk.Frame(self.admin_notebook, style='Modern.TFrame')
-        self.admin_notebook.add(translation_tab, text=self._t("admin.tabTranslations", "🌐 翻譯管理"))
-        
-        self.admin_trans_mgmt = TranslationManagementSection(translation_tab, self.lang_manager)
-        self.admin_trans_mgmt.get_widget().pack(fill='both', expand=True, padx=20, pady=20)
-
         # 班別/區域管理分頁
         master_tab = ttk.Frame(self.admin_notebook, style='Modern.TFrame')
         self.admin_notebook.add(master_tab, text=self._t("admin.tabMasterData", "🧩 班別/區域"))
@@ -2395,7 +2749,7 @@ class ModernMainFrame:
         
         self.db_path_var = tk.StringVar(value=str(get_database_path()))
         ttk.Entry(db_path_frame, textvariable=self.db_path_var, width=50, state='readonly', style='Modern.TEntry').pack(side='left', padx=(0, 10))
-        browse_btn = ttk.Button(db_path_frame, style='Accent.TButton')
+        browse_btn = ttk.Button(db_path_frame, style='Accent.TButton', command=self._browse_database_path)
         self._register_text(browse_btn, "common.browse", "瀏覽...", scope="page")
         browse_btn.pack(side='left')
         
@@ -2433,6 +2787,8 @@ class ModernMainFrame:
 
     def _load_system_settings(self):
         data = self._load_settings_data()
+        if "database_path" in data:
+            self.db_path_var.set(str(data["database_path"]))
         if "auto_backup" in data:
             self.auto_backup_var.set(bool(data["auto_backup"]))
         if "backup_interval_days" in data:
@@ -2472,7 +2828,33 @@ class ModernMainFrame:
                 self._t("common.error", "錯誤"),
                 self._t("settings.saveFailed", "設定儲存失敗：{error}").format(error=exc)
             )
-    
+
+    def _browse_database_path(self):
+        initial_path = self.db_path_var.get().strip()
+        initial_dir = os.path.dirname(initial_path) if initial_path else os.getcwd()
+        path = filedialog.askopenfilename(
+            title=self._t("settings.selectDatabase", "選擇資料庫"),
+            initialdir=initial_dir,
+            filetypes=[("SQLite DB", "*.db"), ("All files", "*.*")],
+        )
+        if not path:
+            return
+        self.db_path_var.set(path)
+        try:
+            merged = self._load_settings_data()
+            merged["database_path"] = path
+            if not self._save_settings_data(merged):
+                raise OSError("settings write failed")
+            messagebox.showinfo(
+                self._t("common.info", "資訊"),
+                self._t("settings.databasePathUpdated", "資料庫路徑已更新。請重新啟動系統以套用新設定。"),
+            )
+        except Exception as exc:
+            messagebox.showerror(
+                self._t("common.error", "錯誤"),
+                self._t("settings.saveFailed", "設定儲存失敗：{error}").format(error=exc),
+            )
+
     def toggle_sidebar(self):
         """收合/展開側邊欄"""
         self.sidebar_collapsed = not self.sidebar_collapsed
@@ -2589,17 +2971,17 @@ class ModernMainFrame:
             self.attendance_section.update_language()
         if hasattr(self, "admin_user_mgmt"):
             self.admin_user_mgmt.update_ui_language()
-        if hasattr(self, "admin_trans_mgmt"):
-            self.admin_trans_mgmt.update_ui_language()
         if hasattr(self, "admin_master_data"):
             self.admin_master_data.update_ui_language()
         self._update_abnormal_filter_options()
+        self._update_summary_query_filter_options()
         self._update_shift_values()
         self._sync_report_context_from_form()
         self._update_delay_headers()
         self._update_summary_dashboard_headers()
         self._update_abnormal_history_headers()
         self._update_summary_headers()
+        self._update_summary_query_headers()
         if self.current_page == "summary" and self.summary_dashboard_data:
             self._render_summary_charts(self.summary_dashboard_data)
         self._update_report_context_label()
@@ -2623,9 +3005,8 @@ class ModernMainFrame:
             return
         tabs = [
             (0, "admin.tabUsers", "👥 使用者管理"),
-            (1, "admin.tabTranslations", "🌐 翻譯管理"),
-            (2, "admin.tabMasterData", "🧩 班別/區域"),
-            (3, "admin.tabSettings", "⚙️ 系統設定"),
+            (1, "admin.tabMasterData", "🧩 班別/區域"),
+            (2, "admin.tabSettings", "⚙️ 系統設定"),
         ]
         for index, key, default in tabs:
             try:
@@ -2672,6 +3053,7 @@ class ModernMainFrame:
             elif self.area_options:
                 self.area_var.set(self.area_options[0])
         self._update_abnormal_filter_options()
+        self._update_summary_query_filter_options()
     
     def add_equipment_record(self):
         """添加設備記錄"""
@@ -3028,6 +3410,10 @@ class ModernMainFrame:
                 self.summary_start_var.set(report_date)
             if hasattr(self, "summary_end_var") and not self.summary_end_var.get().strip():
                 self.summary_end_var.set(report_date)
+            if hasattr(self, "summary_query_start_var") and not self.summary_query_start_var.get().strip():
+                self.summary_query_start_var.set(report_date)
+            if hasattr(self, "summary_query_end_var") and not self.summary_query_end_var.get().strip():
+                self.summary_query_end_var.set(report_date)
 
     def get_report_context(self):
         return dict(self.report_context)
@@ -3053,12 +3439,15 @@ class ModernMainFrame:
         try:
             with SessionLocal() as db:
                 rows = db.query(AttendanceEntry).filter_by(report_id=self.active_report_id).all()
-            if not rows:
-                self.attendance_section.clear_data()
-                return
+                overtime_row = (
+                    db.query(OvertimeEntry)
+                    .filter_by(report_id=self.active_report_id)
+                    .first()
+                )
             data = {
                 "regular": {"scheduled": 0, "present": 0, "absent": 0, "reason": ""},
                 "contractor": {"scheduled": 0, "present": 0, "absent": 0, "reason": ""},
+                "overtime": {"category": "", "count": "", "notes": ""},
             }
             for row in rows:
                 category = row.category.lower()
@@ -3071,6 +3460,12 @@ class ModernMainFrame:
                     "present": row.present_count,
                     "absent": row.absent_count,
                     "reason": row.reason or "",
+                }
+            if overtime_row:
+                data["overtime"] = {
+                    "category": overtime_row.category or "",
+                    "count": overtime_row.count,
+                    "notes": overtime_row.notes or "",
                 }
             self.attendance_section.set_attendance_data(data)
         except Exception as exc:
@@ -3085,6 +3480,7 @@ class ModernMainFrame:
         try:
             with SessionLocal() as db:
                 db.query(AttendanceEntry).filter_by(report_id=self.active_report_id).delete(synchronize_session=False)
+                db.query(OvertimeEntry).filter_by(report_id=self.active_report_id).delete(synchronize_session=False)
                 entries = [
                     AttendanceEntry(
                         report_id=self.active_report_id,
@@ -3104,6 +3500,19 @@ class ModernMainFrame:
                     ),
                 ]
                 db.add_all(entries)
+                overtime_data = data.get("overtime", {})
+                overtime_category = (overtime_data.get("category") or "").strip()
+                overtime_count = int(overtime_data.get("count") or 0)
+                overtime_notes = (overtime_data.get("notes") or "").strip()
+                if overtime_category or overtime_notes or overtime_count:
+                    db.add(
+                        OvertimeEntry(
+                            report_id=self.active_report_id,
+                            category=overtime_category,
+                            count=overtime_count,
+                            notes=overtime_notes,
+                        )
+                    )
                 db.commit()
             self._set_status("status.attendanceSaved", "✅ 出勤資料已儲存")
             return True
@@ -3133,6 +3542,27 @@ class ModernMainFrame:
             stretch = False if col == "id" else True
             anchor = "center" if col not in ("label",) else "w"
             self.summary_tree.column(col, width=width, stretch=stretch, anchor=anchor)
+
+    def _update_summary_query_headers(self):
+        if not hasattr(self, "summary_query_tree"):
+            return
+        widths = {
+            "date": 110,
+            "shift": 90,
+            "area": 120,
+            "key_output": 260,
+            "key_issues": 260,
+            "countermeasures": 260,
+        }
+        for col, (key, default) in zip(self.summary_query_columns, self.summary_query_header_keys):
+            self.summary_query_tree.heading(col, text=self._t(key, default))
+            anchor = "center" if col in ("date", "shift", "area") else "w"
+            self.summary_query_tree.column(
+                col,
+                width=widths.get(col, 140),
+                stretch=True,
+                anchor=anchor,
+            )
 
     def _clear_delay_view(self):
         if hasattr(self, "delay_tree"):
@@ -3426,6 +3856,23 @@ class ModernMainFrame:
 
     def _render_delay_rows(self, rows, pending=False):
         self._clear_tree(self.delay_tree)
+        if pending:
+            def sort_key(row):
+                raw_date = row.get("delay_date")
+                if isinstance(raw_date, str):
+                    try:
+                        raw_date = datetime.strptime(raw_date, "%Y-%m-%d").date()
+                    except ValueError:
+                        raw_date = None
+                return (
+                    raw_date or datetime.min.date(),
+                    str(row.get("reactor", "")).lower(),
+                    str(row.get("process", "")).lower(),
+                    str(row.get("lot", "")).lower(),
+                    str(row.get("wafer", "")).lower(),
+                )
+
+            rows = sorted(rows, key=sort_key)
         for idx, row in enumerate(rows):
             if pending:
                 row_id = f"P{idx}"
@@ -3484,7 +3931,13 @@ class ModernMainFrame:
                     query = query.filter(DelayEntry.delay_date >= start_date)
                 if end_date:
                     query = query.filter(DelayEntry.delay_date <= end_date)
-                rows = query.order_by(DelayEntry.delay_date.desc(), DelayEntry.imported_at.desc()).all()
+                rows = query.order_by(
+                    DelayEntry.delay_date,
+                    DelayEntry.reactor,
+                    DelayEntry.process,
+                    DelayEntry.lot,
+                    DelayEntry.id,
+                ).all()
         except Exception as exc:
             messagebox.showerror(self._t("common.error", "錯誤"), f"{exc}")
             return
@@ -3503,14 +3956,15 @@ class ModernMainFrame:
                 df = pd.read_csv(path, header=1, sep=None, engine="python")
             else:
                 xls = pd.ExcelFile(path)
-                sheet_name = xls.sheet_names[0]
-                if len(xls.sheet_names) > 1:
+                sheet_names = sorted(xls.sheet_names, key=str.lower)
+                sheet_name = sheet_names[0]
+                if len(sheet_names) > 1:
                     picker = tk.Toplevel(self.parent)
                     picker.configure(background=self.COLORS['background'])
                     picker.title(self._t("navigation.delayList", "延遲清單"))
                     ttk.Label(picker, text=self._t("common.selectSheet", "選擇工作表")).pack(padx=10, pady=5)
-                    sheet_var = tk.StringVar(value=xls.sheet_names[0])
-                    combo = ttk.Combobox(picker, textvariable=sheet_var, values=xls.sheet_names, state="readonly")
+                    sheet_var = tk.StringVar(value=sheet_names[0])
+                    combo = ttk.Combobox(picker, textvariable=sheet_var, values=sheet_names, state="readonly")
                     combo.pack(padx=10, pady=5)
                     chosen = {"name": sheet_name}
 
@@ -3729,6 +4183,81 @@ class ModernMainFrame:
         self._register_text(save_btn, "common.save", "儲存", scope="page")
         save_btn.grid(row=len(fields), column=0, columnspan=2, pady=10)
 
+    def _load_summary_query_records(self):
+        if not hasattr(self, "summary_query_tree"):
+            return
+        self._clear_tree(self.summary_query_tree)
+        start = self.summary_query_start_var.get().strip()
+        end = self.summary_query_end_var.get().strip()
+        if not start or not end:
+            messagebox.showwarning(
+                self._t("common.warning", "提醒"),
+                self._t("summaryQuery.missingRange", "請先選擇查詢起日與迄日。"),
+            )
+            return
+        try:
+            start_date = datetime.strptime(start, "%Y-%m-%d").date()
+            end_date = datetime.strptime(end, "%Y-%m-%d").date()
+        except ValueError:
+            messagebox.showerror(
+                self._t("common.error", "錯誤"),
+                self._t("errors.invalidDateFormat", "日期格式需為 YYYY-MM-DD"),
+            )
+            return
+        if end_date < start_date:
+            messagebox.showwarning(
+                self._t("common.warning", "提醒"),
+                self._t("summaryQuery.invalidRange", "迄日不可早於起日。"),
+            )
+            return
+
+        all_labels = {self._t("common.all", "全部"), "全部", "All", "すべて"}
+        shift_display = self.summary_query_shift_var.get().strip()
+        shift_code = None
+        if shift_display and shift_display not in all_labels:
+            shift_code = self.shift_code_map.get(shift_display, shift_display)
+        area_value = self.summary_query_area_var.get().strip()
+        if not area_value or area_value in all_labels:
+            area_value = None
+
+        def normalize(text):
+            return " ".join(text.split()) if text else ""
+
+        try:
+            with SessionLocal() as db:
+                query = (
+                    db.query(DailyReport)
+                    .filter(DailyReport.date >= start_date)
+                    .filter(DailyReport.date <= end_date)
+                )
+                if shift_code:
+                    query = query.filter(DailyReport.shift == shift_code)
+                if area_value:
+                    query = query.filter(DailyReport.area == area_value)
+                rows = query.order_by(
+                    DailyReport.date,
+                    DailyReport.area,
+                    DailyReport.shift,
+                ).all()
+            for row in rows:
+                self.summary_query_tree.insert(
+                    "",
+                    "end",
+                    values=(
+                        row.date.strftime("%Y-%m-%d"),
+                        self._format_shift_display(row.shift),
+                        row.area,
+                        normalize(row.summary_key_output),
+                        normalize(row.summary_issues),
+                        normalize(row.summary_countermeasures),
+                    ),
+                )
+        except Exception as exc:
+            messagebox.showerror(
+                self._t("common.error", "錯誤"),
+                self._t("summaryQuery.loadFailed", "摘要查詢失敗：{error}").format(error=exc),
+            )
+
     def _load_summary_actual(self):
         self._clear_tree(self.summary_tree)
         start = self.summary_start_var.get().strip()
@@ -3747,7 +4276,20 @@ class ModernMainFrame:
             return "-" if val == 0 else str(val)
 
         if self.summary_pending_records:
-            for idx, row in enumerate(self.summary_pending_records):
+            def pending_sort_key(row):
+                raw_date = row.get("summary_date")
+                if isinstance(raw_date, str):
+                    try:
+                        raw_date = datetime.strptime(raw_date, "%Y-%m-%d").date()
+                    except ValueError:
+                        raw_date = None
+                return (
+                    raw_date or datetime.min.date(),
+                    str(row.get("label", "")).lower(),
+                )
+
+            pending_rows = sorted(self.summary_pending_records, key=pending_sort_key)
+            for idx, row in enumerate(pending_rows):
                 self.summary_tree.insert(
                     "",
                     "end",
@@ -3775,7 +4317,11 @@ class ModernMainFrame:
                     query = query.filter(SummaryActualEntry.summary_date >= start_date)
                 if end_date:
                     query = query.filter(SummaryActualEntry.summary_date <= end_date)
-                rows = query.order_by(SummaryActualEntry.summary_date.desc(), SummaryActualEntry.imported_at.desc()).all()
+                rows = query.order_by(
+                    SummaryActualEntry.summary_date,
+                    SummaryActualEntry.label,
+                    SummaryActualEntry.id,
+                ).all()
         except Exception as exc:
             messagebox.showerror(self._t("common.error", "錯誤"), f"{exc}")
             return

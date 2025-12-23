@@ -17,7 +17,8 @@
     "attendance": "出勤",
     "equipment": "設備異常",
     "lot": "異常ロット",
-    "summary": "サマリー",
+    "summary": "出勤率",
+    "summaryQuery": "サマリー検索",
     "abnormalHistory": "異常履歴",
     "masterData": "基本データ管理",
     "delayList": "ディレイリスト",
@@ -151,8 +152,12 @@
       "subtitle": "ロット異常と処置状況を記録"
     },
     "summary": {
-      "title": "出勤統計",
-      "subtitle": "期間内の出勤情報を集計"
+      "title": "出勤率",
+      "subtitle": "期間内の出勤率を集計"
+    },
+    "summaryQuery": {
+      "title": "サマリー検索",
+      "subtitle": "期間・シフト・エリアで日報サマリーを検索"
     },
     "abnormalHistory": {
       "title": "異常履歴",
@@ -160,7 +165,7 @@
     },
     "admin": {
       "title": "システム管理",
-      "subtitle": "ユーザー・翻訳・設定を管理"
+      "subtitle": "ユーザー・シフト/エリア・設定を管理"
     },
     "delayList": {
       "title": "ディレイリスト",
@@ -178,9 +183,9 @@
     "lotRecord": "異常ロット記録",
     "workSummary": "業務サマリー",
     "statsToday": "本日の統計",
-    "attendanceSummary": "出勤統計",
-    "attendanceTable": "出勤統計表",
-    "attendanceCharts": "出勤グラフ",
+    "attendanceSummary": "出勤率",
+    "attendanceTable": "出勤率表",
+    "attendanceCharts": "出勤率グラフ",
     "abnormalHistorySearch": "異常履歴検索",
     "abnormalEquipmentHistory": "設備異常履歴",
     "abnormalLotHistory": "ロット異常履歴",
@@ -189,7 +194,9 @@
     "delayList": "ディレイリスト",
     "delayListTable": "ディレイリストデータ",
     "summaryActual": "Summary Actual",
-    "summaryActualTable": "Summary Actual データ"
+    "summaryActualTable": "Summary Actual データ",
+    "summaryQuery": "サマリー検索",
+    "summaryQueryTable": "サマリー検索結果"
   },
   "fields": {
     "date": "📅 日付:",
@@ -197,9 +204,22 @@
     "area": "🏭 エリア:"
   },
   "summary": {
-    "keyOutput": "🔑 Key Machine Output:",
-    "issues": "⚠️ Key Issues:",
-    "countermeasures": "✅ Countermeasures:"
+    "keyOutput": "🔑 主要機台出力:",
+    "issues": "⚠️ 主要課題:",
+    "countermeasures": "✅ 対策:"
+  },
+  "summaryQuery": {
+    "startDate": "開始日",
+    "endDate": "終了日",
+    "shift": "シフト",
+    "area": "エリア",
+    "date": "日付",
+    "keyOutput": "主要機台出力",
+    "keyIssues": "主要課題",
+    "countermeasures": "対策",
+    "missingRange": "開始日と終了日を選択してください。",
+    "invalidRange": "終了日は開始日より前にできません。",
+    "loadFailed": "サマリー検索に失敗しました：{error}"
   },
   "summaryDashboard": {
     "startDate": "統計開始日",
@@ -213,6 +233,12 @@
     "regularAbsent": "正社員 欠勤",
     "contractPresent": "契約社員 出勤",
     "contractAbsent": "契約社員 欠勤",
+    "lastModified": "最終更新",
+    "update": "更新",
+    "updateSuccess": "更新が完了しました",
+    "updateConflict": "選択した日付/シフト/エリアの報告が既に存在します。",
+    "invalidShift": "有効なシフトを選択してください",
+    "invalidArea": "有効なエリアを選択してください",
     "present": "出勤",
     "absent": "欠勤",
     "rateLineTitle": "出勤率推移",
@@ -263,6 +289,8 @@
     "saveBackup": "確定",
     "invalidBackupInterval": "バックアップ間隔は正の整数で入力してください",
     "saved": "✅ 設定を保存しました",
+    "selectDatabase": "データベースを選択",
+    "databasePathUpdated": "データベースパスを更新しました。反映には再起動が必要です。",
     "saveFailed": "設定の保存に失敗しました：{error}"
   },
   "stats": {
@@ -289,6 +317,12 @@
     "contractor_staff": "契約社員",
     "regular_short": "正社員",
     "contractor_short": "契約社員",
+    "overtime_title": "残業",
+    "overtime_category": "区分",
+    "overtime_count": "人数",
+    "overtime_notes": "備考",
+    "overtime_regular": "正社員",
+    "overtime_contract": "契約社員",
     "validate": "データ検証",
     "statistics": "統計",
     "rate": "出勤率",
@@ -302,6 +336,7 @@
     "error_regular_negative": "正社員：人数は負の値にできません",
     "error_contractor_exceeds": "契約社員：出勤({present}) + 欠勤({absent}) > 定員({scheduled})",
     "error_contractor_negative": "契約社員：人数は負の値にできません",
+    "error_overtime_negative": "残業人数は負の値にできません",
     "validation_summary_intro": "✅ 出勤データは問題ありません。",
     "validation_summary_regular": "正社員: 定員 {scheduled}, 出勤 {present}, 欠勤 {absent}, 出勤率 {rate:.1f}%",
     "validation_summary_contractor": "契約社員: 定員 {scheduled}, 出勤 {present}, 欠勤 {absent}, 出勤率 {rate:.1f}%",
@@ -349,6 +384,8 @@
     "userList": "ユーザー一覧",
     "resetPassword": "パスワード再設定",
     "loadUsersFailed": "ユーザーの読み込みに失敗しました：{error}",
+    "userExists": "ユーザー名は既に存在します",
+    "userCreateFailed": "ユーザー追加に失敗しました：{error}",
     "tabMasterData": "🧩 シフト/エリア",
     "shiftManagement": "シフト管理",
     "areaManagement": "エリア管理",

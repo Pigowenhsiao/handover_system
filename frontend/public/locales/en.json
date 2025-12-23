@@ -17,7 +17,8 @@
     "attendance": "Attendance",
     "equipment": "Equipment",
     "lot": "Lot Issues",
-    "summary": "Summary",
+    "summary": "Attendance Rate",
+    "summaryQuery": "Summary Query",
     "abnormalHistory": "Abnormal History",
     "masterData": "Master Data Management",
     "delayList": "Delay List",
@@ -151,8 +152,12 @@
       "subtitle": "Log abnormal lots and handling"
     },
     "summary": {
-      "title": "Attendance Summary",
-      "subtitle": "Aggregate attendance by date range"
+      "title": "Attendance Rate",
+      "subtitle": "Aggregate attendance rate by date range"
+    },
+    "summaryQuery": {
+      "title": "Summary Query",
+      "subtitle": "Search daily report summaries by date, shift, and area"
     },
     "abnormalHistory": {
       "title": "Abnormal History",
@@ -160,7 +165,7 @@
     },
     "admin": {
       "title": "System Admin",
-      "subtitle": "Manage users, translations, and settings"
+      "subtitle": "Manage users, shifts/areas, and settings"
     },
     "delayList": {
       "title": "Delay List",
@@ -178,9 +183,9 @@
     "lotRecord": "Lot Logs",
     "workSummary": "Work Summary",
     "statsToday": "Today's Stats",
-    "attendanceSummary": "Attendance Summary",
-    "attendanceTable": "Attendance Table",
-    "attendanceCharts": "Attendance Charts",
+    "attendanceSummary": "Attendance Rate",
+    "attendanceTable": "Attendance Rate Table",
+    "attendanceCharts": "Attendance Rate Charts",
     "abnormalHistorySearch": "Abnormal History",
     "abnormalEquipmentHistory": "Equipment History",
     "abnormalLotHistory": "Lot History",
@@ -189,7 +194,9 @@
     "delayList": "Delay List",
     "delayListTable": "Delay List Data",
     "summaryActual": "Summary Actual",
-    "summaryActualTable": "Summary Actual Data"
+    "summaryActualTable": "Summary Actual Data",
+    "summaryQuery": "Summary Query",
+    "summaryQueryTable": "Summary Query Results"
   },
   "fields": {
     "date": "📅 Date:",
@@ -200,6 +207,19 @@
     "keyOutput": "🔑 Key Machine Output:",
     "issues": "⚠️ Key Issues:",
     "countermeasures": "✅ Countermeasures:"
+  },
+  "summaryQuery": {
+    "startDate": "Start Date",
+    "endDate": "End Date",
+    "shift": "Shift",
+    "area": "Area",
+    "date": "Date",
+    "keyOutput": "Key Machine Output",
+    "keyIssues": "Key Issues",
+    "countermeasures": "Countermeasures",
+    "missingRange": "Please select both start and end dates.",
+    "invalidRange": "End date cannot be earlier than start date.",
+    "loadFailed": "Failed to load summary query: {error}"
   },
   "summaryDashboard": {
     "startDate": "Start Date",
@@ -213,6 +233,12 @@
     "regularAbsent": "Regular Absent",
     "contractPresent": "Contract Present",
     "contractAbsent": "Contract Absent",
+    "lastModified": "Last Modified",
+    "update": "Update",
+    "updateSuccess": "Update completed",
+    "updateConflict": "Another report already exists for the selected date/shift/area.",
+    "invalidShift": "Please select a valid shift",
+    "invalidArea": "Please select a valid area",
     "present": "Present",
     "absent": "Absent",
     "rateLineTitle": "Attendance Rate Trend",
@@ -263,6 +289,8 @@
     "saveBackup": "Confirm",
     "invalidBackupInterval": "Backup interval must be a positive integer",
     "saved": "✅ Settings saved",
+    "selectDatabase": "Select Database",
+    "databasePathUpdated": "Database path updated. Please restart the system to apply the change.",
     "saveFailed": "Failed to save settings: {error}"
   },
   "stats": {
@@ -289,6 +317,12 @@
     "contractor_staff": "Contractor Staff",
     "regular_short": "Regular",
     "contractor_short": "Contract",
+    "overtime_title": "Overtime",
+    "overtime_category": "Category",
+    "overtime_count": "Headcount",
+    "overtime_notes": "Notes",
+    "overtime_regular": "Regular Staff",
+    "overtime_contract": "Contract Staff",
     "validate": "Validate Data",
     "statistics": "Statistics",
     "rate": "Attendance Rate",
@@ -302,6 +336,7 @@
     "error_regular_negative": "Regular: counts cannot be negative",
     "error_contractor_exceeds": "Contractor: present({present}) + absent({absent}) > scheduled({scheduled})",
     "error_contractor_negative": "Contractor: counts cannot be negative",
+    "error_overtime_negative": "Overtime count cannot be negative",
     "validation_summary_intro": "✅ Attendance data looks valid.",
     "validation_summary_regular": "Regular: scheduled {scheduled}, present {present}, absent {absent}, rate {rate:.1f}%",
     "validation_summary_contractor": "Contractor: scheduled {scheduled}, present {present}, absent {absent}, rate {rate:.1f}%",
@@ -349,6 +384,8 @@
     "userList": "User List",
     "resetPassword": "Reset Password",
     "loadUsersFailed": "Failed to load users: {error}",
+    "userExists": "Username already exists",
+    "userCreateFailed": "Failed to create user: {error}",
     "tabMasterData": "🧩 Shift & Area",
     "shiftManagement": "Shift Management",
     "areaManagement": "Area Management",

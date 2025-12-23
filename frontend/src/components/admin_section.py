@@ -6,6 +6,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 from datetime import datetime
 import json
+from auth import hash_password
 from models import SessionLocal, ShiftOption, AreaOption, User
 
 
@@ -67,7 +68,7 @@ class UserManagementSection:
         role_combo = ttk.Combobox(
             self.input_frame,
             textvariable=self.role_var,
-            values=["user", "admin"],
+            values=sorted(["user", "admin"]),
             state="readonly",
             width=18
         )
@@ -168,7 +169,7 @@ class UserManagementSection:
             self.tree.delete(item)
         try:
             with SessionLocal() as db:
-                users = db.query(User).order_by(User.id).all()
+                users = db.query(User).order_by(User.username).all()
             for user in users:
                 self.tree.insert(
                     "",
@@ -224,32 +225,41 @@ class UserManagementSection:
     def create_user(self):
         """創建新使用者"""
         # 驗證輸入字段
-        if not self.username_var.get().strip() or not self.password_var.get().strip():
+        username = self.username_var.get().strip()
+        password = self.password_var.get().strip()
+        if not username or not password:
             messagebox.showerror(
                 self.lang_manager.get_text("common.error", "錯誤"),
                 self.lang_manager.get_text("admin.requiredFields", "使用者名稱和密碼是必填字段")
             )
             return
-        
-        # 在實際應用中，這會調用後端API創建用戶
-        # 目前僅模擬在表格中添加項目
-        item_id = len(self.tree.get_children()) + 1
-        self.tree.insert("", "end", values=(
-            item_id,
-            self.username_var.get().strip(),
-            self.email_var.get().strip(),
-            self.role_var.get(),
-            "是",
-            datetime.now().strftime("%Y-%m-%d %H:%M")
-        ))
-        
-        # 清空字段
-        self.reset_fields()
-        
-        messagebox.showinfo(
-            self.lang_manager.get_text("common.success", "成功"),
-            self.lang_manager.get_text("admin.userCreated", "使用者已創建")
-        )
+
+        try:
+            with SessionLocal() as db:
+                if db.query(User).filter_by(username=username).first():
+                    messagebox.showwarning(
+                        self.lang_manager.get_text("common.warning", "警告"),
+                        self.lang_manager.get_text("admin.userExists", "使用者名稱已存在")
+                    )
+                    return
+                user = User(
+                    username=username,
+                    password_hash=hash_password(password),
+                    role=self.role_var.get(),
+                )
+                db.add(user)
+                db.commit()
+            self.reset_fields()
+            self.load_users()
+            messagebox.showinfo(
+                self.lang_manager.get_text("common.success", "成功"),
+                self.lang_manager.get_text("admin.userCreated", "使用者已創建")
+            )
+        except Exception as exc:
+            messagebox.showerror(
+                self.lang_manager.get_text("common.error", "錯誤"),
+                self.lang_manager.get_text("admin.userCreateFailed", "新增使用者失敗：{error}").format(error=exc)
+            )
     
     def update_user(self):
         """更新選定的使用者"""
@@ -527,8 +537,8 @@ class MasterDataSection:
                 tree.delete(item)
         try:
             with SessionLocal() as db:
-                shifts = db.query(ShiftOption).order_by(ShiftOption.id).all()
-                areas = db.query(AreaOption).order_by(AreaOption.id).all()
+                shifts = db.query(ShiftOption).order_by(ShiftOption.name).all()
+                areas = db.query(AreaOption).order_by(AreaOption.name).all()
             for shift in shifts:
                 self.shift_tree.insert("", "end", values=(shift.id, shift.name))
             for area in areas:
@@ -853,7 +863,7 @@ class TranslationManagementSection:
         lang_combo = ttk.Combobox(
             toolbar,
             textvariable=self.selected_language_var,
-            values=["ja", "zh", "en"],
+            values=sorted(["ja", "zh", "en"]),
             state="readonly",
             width=10
         )
@@ -885,7 +895,7 @@ class TranslationManagementSection:
         lang_combo2 = ttk.Combobox(
             self.input_frame,
             textvariable=self.resource_lang_var,
-            values=["ja", "zh", "en"],
+            values=sorted(["ja", "zh", "en"]),
             state="readonly",
             width=10
         )

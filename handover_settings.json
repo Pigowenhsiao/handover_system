@@ -1,5 +1,6 @@
 {
   "auto_backup": true,
   "backup_interval_days": 365,
-  "theme": "light"
+  "theme": "light",
+  "database_path": "E:/python_Code/handover_system/data/handover_system.db"
 }
