@@ -281,7 +281,9 @@
     "basicInfoSavedDetail": "基本資訊已儲存（報表 ID: {report_id}）",
     "basicInfoSaveFailed": "基本資訊儲存失敗：{error}",
     "basicInfoLocked": "⚠️ 請先儲存基本資訊",
-    "attendanceSaved": "✅ 出勤資料已儲存"
+    "attendanceSaved": "✅ 出勤資料已儲存",
+    "exitBlockedPendingImports": "尚有未上傳資料，請先上傳或清除後再離開。",
+    "exitBlockedMissingContext": "日報基本資訊未完成，無法在離開前寫入資料。請先設定日期、班別、區域並儲存。"
   },
   "settings": {
     "databasePath": "資料庫路徑:",
@@ -292,7 +294,7 @@
     "invalidBackupInterval": "備份間隔需為正整數",
     "saved": "✅ 設定已儲存",
     "selectDatabase": "選擇資料庫",
-    "databasePathUpdated": "資料庫路徑已更新。請重新啟動系統以套用新設定。",
+    "databasePathUpdated": "資料庫路徑已更新。系統將關閉，請重新啟動以套用新設定。",
     "saveFailed": "設定儲存失敗：{error}"
   },
   "stats": {
@@ -312,7 +314,8 @@
     "loginFailed": "帳號或密碼錯誤",
     "loginFailedDetail": "登入失敗：{error}",
     "loginRequiredTitle": "尚未登入",
-    "loginRequiredBody": "請先登入後再儲存日報。"
+    "loginRequiredBody": "請先登入後再儲存日報。",
+    "loginRequiredNavigationBody": "請先登入後再使用報表功能。"
   },
   "attendance": {
     "regular_staff": "正社員 (Regular Staff)",

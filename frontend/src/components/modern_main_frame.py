@@ -95,6 +95,8 @@ class ModernMainFrame:
         self.report_is_saved = False
         self.active_report_id = None
         self.nav_locked = True
+        self._basic_info_optional_pages = {"summary", "summary_query", "abnormal_history"}
+        self._closing = False
         self.layout = {
             "page_pad": 24,
             "section_pad": 20,
@@ -118,6 +120,7 @@ class ModernMainFrame:
 
         # 先顯示登入畫面
         self._show_login_screen()
+        self.parent.protocol("WM_DELETE_WINDOW", self._on_app_close)
 
     def _t(self, key, default):
         return self.lang_manager.get_text(key, default)
@@ -761,7 +764,14 @@ class ModernMainFrame:
     
     def show_page(self, page_id):
         """顯示指定頁面"""
-        if self.nav_locked and page_id != 'daily_report':
+        if page_id in self._basic_info_optional_pages and not self.current_user:
+            messagebox.showwarning(
+                self._t("auth.loginRequiredTitle", "尚未登入"),
+                self._t("auth.loginRequiredNavigationBody", "請先登入後再使用報表功能。"),
+            )
+            return
+        basic_info_required = page_id not in ({"daily_report"} | self._basic_info_optional_pages)
+        if self.nav_locked and basic_info_required:
             messagebox.showwarning(
                 self._t("context.basicInfoRequiredTitle", "尚未儲存基本資訊"),
                 self._t("context.basicInfoRequiredBody", "請先在日報表儲存日期、班別、區域後再使用其他功能。")
@@ -856,7 +866,7 @@ class ModernMainFrame:
             widget_type='combo',
             var_name='shift_var',
             values=shift_values,
-            default=shift_values[0] if shift_values else ""
+            default=""
         )
         
         # 區域
@@ -867,7 +877,7 @@ class ModernMainFrame:
             widget_type='combo',
             var_name='area_var',
             values=self.area_options,
-            default=self.area_options[0] if self.area_options else ""
+            default=""
         )
 
         basic_action_frame = ttk.Frame(form_frame, style='Card.TFrame')
@@ -1612,9 +1622,22 @@ class ModernMainFrame:
         )
         self._update_summary_query_headers()
         self.summary_query_tree.pack(side='left', fill='both', expand=True)
-        summary_scroll = ttk.Scrollbar(table_frame, orient="vertical", command=self.summary_query_tree.yview)
-        self.summary_query_tree.configure(yscrollcommand=summary_scroll.set)
+        summary_scroll = ttk.Scrollbar(
+            table_frame,
+            orient="vertical",
+            command=self.summary_query_tree.yview,
+        )
         summary_scroll.pack(side="right", fill="y")
+        summary_scroll_x = ttk.Scrollbar(
+            table_frame,
+            orient="horizontal",
+            command=self.summary_query_tree.xview,
+        )
+        summary_scroll_x.pack(side="bottom", fill="x")
+        self.summary_query_tree.configure(
+            yscrollcommand=summary_scroll.set,
+            xscrollcommand=summary_scroll_x.set,
+        )
 
         self._load_summary_query_records()
 
@@ -2455,15 +2478,25 @@ class ModernMainFrame:
         self._apply_chart_axes_theme(line_ax, theme)
         line_ax.set_title(self._t("summaryDashboard.rateLineTitle", "出勤率趨勢"))
         if labels:
-            x = range(len(labels))
+            x = list(range(len(labels)))
             line_ax.plot(
-                list(x),
+                x,
                 rate_values,
                 marker="o",
                 color=theme["line"],
                 label=self._t("summaryDashboard.rateSeries", "出勤率"),
             )
-            line_ax.set_xticks(list(x))
+            for idx, rate in enumerate(rate_values):
+                line_ax.annotate(
+                    f"{rate:.1f}%",
+                    (x[idx], rate),
+                    textcoords="offset points",
+                    xytext=(0, 6),
+                    ha="center",
+                    color=theme["text"],
+                    fontsize=8,
+                )
+            line_ax.set_xticks(x)
             line_ax.set_xticklabels(labels, rotation=45, ha="right")
             line_ax.set_ylabel(self._t("summaryDashboard.rateAxis", "出勤率 (%)"))
             line_ax.set_ylim(0, 100)
@@ -2494,8 +2527,13 @@ class ModernMainFrame:
         bar_ax.set_title(self._t("summaryDashboard.countChartTitle", "出勤人數"))
 
         if labels:
-            x = range(len(labels))
-            bar_ax.bar(x, regular_values, label=self._t("attendance.regular_short", "正職"), color=theme["bar_primary"])
+            x = list(range(len(labels)))
+            bar_ax.bar(
+                x,
+                regular_values,
+                label=self._t("attendance.regular_short", "正職"),
+                color=theme["bar_primary"],
+            )
             bar_ax.bar(
                 x,
                 contract_values,
@@ -2503,7 +2541,28 @@ class ModernMainFrame:
                 label=self._t("attendance.contractor_short", "契約"),
                 color=theme["bar_accent"],
             )
-            bar_ax.set_xticks(list(x))
+            for idx, (reg, con) in enumerate(zip(regular_values, contract_values)):
+                if reg:
+                    bar_ax.text(
+                        x[idx],
+                        reg / 2,
+                        f"{reg}",
+                        ha="center",
+                        va="center",
+                        color=theme["text"],
+                        fontsize=8,
+                    )
+                if con:
+                    bar_ax.text(
+                        x[idx],
+                        reg + (con / 2),
+                        f"{con}",
+                        ha="center",
+                        va="center",
+                        color=theme["text"],
+                        fontsize=8,
+                    )
+            bar_ax.set_xticks(x)
             bar_ax.set_xticklabels(labels, rotation=45, ha="right")
             bar_ax.set_ylabel(self._t("summaryDashboard.countAxis", "出勤人數"))
             legend = bar_ax.legend(loc="upper right")
@@ -2859,16 +2918,15 @@ class ModernMainFrame:
         )
         if not path:
             return
+        if not self._can_close_app(confirm=False):
+            return
         self.db_path_var.set(path)
         try:
             merged = self._load_settings_data()
             merged["database_path"] = path
             if not self._save_settings_data(merged):
                 raise OSError("settings write failed")
-            messagebox.showinfo(
-                self._t("common.info", "資訊"),
-                self._t("settings.databasePathUpdated", "資料庫路徑已更新。請重新啟動系統以套用新設定。"),
-            )
+            self._request_restart(skip_checks=True)
         except Exception as exc:
             messagebox.showerror(
                 self._t("common.error", "錯誤"),
@@ -2913,6 +2971,8 @@ class ModernMainFrame:
         for page_id, button in self.nav_buttons.items():
             if page_id == "daily_report":
                 button.configure(state="normal")
+            elif page_id in self._basic_info_optional_pages:
+                button.configure(state="normal")
             else:
                 button.configure(state="disabled" if locked else "normal")
         if not locked:
@@ -2923,6 +2983,108 @@ class ModernMainFrame:
         self.active_report_id = None
         self.saved_context = {"date": "", "shift": "", "area": ""}
         self._set_navigation_locked(True)
+
+    def _flush_inline_edits(self):
+        if getattr(self, "_summary_dash_edit_entry", None) is not None:
+            self._commit_summary_dash_cell_edit()
+        if getattr(self, "_delay_edit_entry", None) is not None:
+            self._commit_delay_cell_edit()
+
+    def _has_pending_imports(self):
+        return bool(self.delay_pending_records or self.summary_pending_records)
+
+    def _has_daily_report_content(self):
+        fields = []
+        if hasattr(self, "key_output_text"):
+            fields.append(self.key_output_text.get("1.0", "end").strip())
+        if hasattr(self, "key_issues_text"):
+            fields.append(self.key_issues_text.get("1.0", "end").strip())
+        if hasattr(self, "countermeasures_text"):
+            fields.append(self.countermeasures_text.get("1.0", "end").strip())
+        return any(fields)
+
+    def _attempt_save_daily_report(self):
+        if not (self._has_daily_report_content() or self.report_is_saved or self.active_report_id):
+            return True
+        self._sync_report_context_from_form()
+        date_str = (self.report_context.get("date") or "").strip()
+        shift_code = self._get_shift_code()
+        area = (self.report_context.get("area") or "").strip()
+        if not (date_str and shift_code and area):
+            messagebox.showwarning(
+                self._t("common.warning", "提醒"),
+                self._t(
+                    "status.exitBlockedMissingContext",
+                    "日報基本資訊未完成，無法在離開前寫入資料。請先設定日期、班別、區域並儲存。",
+                ),
+            )
+            return False
+        report_id = self._save_report(context_only=False)
+        return bool(report_id)
+
+    def _attempt_save_attendance(self):
+        if not hasattr(self, "attendance_section"):
+            return True
+        if not getattr(self.attendance_section, "data_modified", False):
+            return True
+        try:
+            data = self.attendance_section.get_attendance_data()
+        except Exception:
+            messagebox.showerror(
+                self._t("common.error", "錯誤"),
+                self._t("attendance.invalidNumbers", "請確保輸入的都是有效數字"),
+            )
+            return False
+        if not self.save_attendance_entries(data):
+            return False
+        self.attendance_section.data_modified = False
+        self.attendance_section.update_status_indicator()
+        return True
+
+    def _can_close_app(self, confirm=True):
+        if confirm and not messagebox.askokcancel(
+            self._t("common.quit", "離開"),
+            self._t("common.confirmQuit", "確定要離開嗎？"),
+        ):
+            return False
+        self._flush_inline_edits()
+        if not self._attempt_save_daily_report():
+            return False
+        if not self._attempt_save_attendance():
+            return False
+        if self._has_pending_imports():
+            messagebox.showwarning(
+                self._t("common.warning", "提醒"),
+                self._t(
+                    "status.exitBlockedPendingImports",
+                    "尚有未上傳資料，請先上傳或清除後再離開。",
+                ),
+            )
+            return False
+        return True
+
+    def _on_app_close(self):
+        if self._closing:
+            return
+        if not self._can_close_app(confirm=True):
+            return
+        self._closing = True
+        self.parent.destroy()
+
+    def _request_restart(self, skip_checks=False):
+        if self._closing:
+            return
+        if not skip_checks and not self._can_close_app(confirm=False):
+            return
+        messagebox.showinfo(
+            self._t("common.info", "資訊"),
+            self._t(
+                "settings.databasePathUpdated",
+                "資料庫路徑已更新。系統將關閉，請重新啟動以套用新設定。",
+            ),
+        )
+        self._closing = True
+        self.parent.destroy()
     
     def toggle_auth(self):
         """切換登入/登出"""
@@ -3040,11 +3202,14 @@ class ModernMainFrame:
         if not self.shift_combo.winfo_exists():
             return
         self._load_shift_area_options()
+        current_display = self.shift_var.get().strip()
         current_code = self._get_shift_code()
         new_values = self._build_shift_display_options()
         self.shift_values = new_values
         self.shift_combo["values"] = new_values
-        if current_code in self.shift_display_map:
+        if not current_display:
+            self.shift_var.set("")
+        elif current_code in self.shift_display_map:
             self.shift_var.set(self.shift_display_map[current_code])
         elif new_values:
             self.shift_var.set(new_values[0])
@@ -3057,18 +3222,23 @@ class ModernMainFrame:
     def refresh_shift_area_options(self):
         self._load_shift_area_options()
         if hasattr(self, "shift_combo") and self.shift_combo.winfo_exists():
+            current_display = self.shift_var.get().strip() if hasattr(self, "shift_var") else ""
             current_code = self._get_shift_code()
             new_values = self._build_shift_display_options()
             self.shift_values = new_values
             self.shift_combo["values"] = new_values
-            if current_code in self.shift_display_map:
+            if not current_display:
+                self.shift_var.set("")
+            elif current_code in self.shift_display_map:
                 self.shift_var.set(self.shift_display_map[current_code])
             elif new_values:
                 self.shift_var.set(new_values[0])
         if hasattr(self, "area_combo") and self.area_combo.winfo_exists():
             current_area = self.area_var.get().strip() if hasattr(self, "area_var") else ""
             self.area_combo["values"] = self.area_options
-            if current_area in self.area_options:
+            if not current_area:
+                self.area_var.set("")
+            elif current_area in self.area_options:
                 self.area_var.set(current_area)
             elif self.area_options:
                 self.area_var.set(self.area_options[0])
@@ -3376,9 +3546,9 @@ class ModernMainFrame:
         if hasattr(self, "date_var"):
             self.date_var.set(datetime.now().strftime("%Y-%m-%d"))
         if hasattr(self, "shift_values") and hasattr(self, "shift_var") and self.shift_values:
-            self.shift_var.set(self.shift_values[0])
+            self.shift_var.set("")
         if hasattr(self, "area_var"):
-            self.area_var.set("etching_D")
+            self.area_var.set("")
         if hasattr(self, "key_output_text"):
             self.key_output_text.delete("1.0", "end")
         if hasattr(self, "key_issues_text"):

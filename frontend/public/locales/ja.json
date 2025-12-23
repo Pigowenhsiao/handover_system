@@ -281,7 +281,9 @@
     "basicInfoSavedDetail": "基本情報を保存しました（レポートID: {report_id}）",
     "basicInfoSaveFailed": "基本情報の保存に失敗しました：{error}",
     "basicInfoLocked": "⚠️ 先に基本情報を保存してください",
-    "attendanceSaved": "✅ 出勤データを保存しました"
+    "attendanceSaved": "✅ 出勤データを保存しました",
+    "exitBlockedPendingImports": "未アップロードのデータがあります。アップロードまたは削除してから終了してください。",
+    "exitBlockedMissingContext": "日報の基本情報が未完了です。終了前に日付・シフト・区域を設定して保存してください。"
   },
   "settings": {
     "databasePath": "データベースパス:",
@@ -292,7 +294,7 @@
     "invalidBackupInterval": "バックアップ間隔は正の整数で入力してください",
     "saved": "✅ 設定を保存しました",
     "selectDatabase": "データベースを選択",
-    "databasePathUpdated": "データベースパスを更新しました。反映には再起動が必要です。",
+    "databasePathUpdated": "データベースパスを更新しました。システムを終了しますので、再起動して反映してください。",
     "saveFailed": "設定の保存に失敗しました：{error}"
   },
   "stats": {
@@ -312,7 +314,8 @@
     "loginFailed": "ユーザー名またはパスワードが正しくありません。",
     "loginFailedDetail": "ログイン失敗：{error}",
     "loginRequiredTitle": "ログインが必要です",
-    "loginRequiredBody": "日報を保存する前にログインしてください。"
+    "loginRequiredBody": "日報を保存する前にログインしてください。",
+    "loginRequiredNavigationBody": "レポートを利用する前にログインしてください。"
   },
   "attendance": {
     "regular_staff": "正社員",

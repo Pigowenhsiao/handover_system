@@ -281,7 +281,9 @@
     "basicInfoSavedDetail": "Basic information saved (Report ID: {report_id})",
     "basicInfoSaveFailed": "Failed to save basic information: {error}",
     "basicInfoLocked": "⚠️ Please save basic information first",
-    "attendanceSaved": "✅ Attendance saved"
+    "attendanceSaved": "✅ Attendance saved",
+    "exitBlockedPendingImports": "There are pending import records. Please upload or clear them before exiting.",
+    "exitBlockedMissingContext": "Daily report basics are incomplete. Please set date/shift/area and save before exiting."
   },
   "settings": {
     "databasePath": "Database Path:",
@@ -292,7 +294,7 @@
     "invalidBackupInterval": "Backup interval must be a positive integer",
     "saved": "✅ Settings saved",
     "selectDatabase": "Select Database",
-    "databasePathUpdated": "Database path updated. Please restart the system to apply the change.",
+    "databasePathUpdated": "Database path updated. The system will close; please restart to apply the change.",
     "saveFailed": "Failed to save settings: {error}"
   },
   "stats": {
@@ -312,7 +314,8 @@
     "loginFailed": "Invalid username or password.",
     "loginFailedDetail": "Login failed: {error}",
     "loginRequiredTitle": "Login required",
-    "loginRequiredBody": "Please log in before saving the report."
+    "loginRequiredBody": "Please log in before saving the report.",
+    "loginRequiredNavigationBody": "Please log in before accessing report pages."
   },
   "attendance": {
     "regular_staff": "Regular Staff",

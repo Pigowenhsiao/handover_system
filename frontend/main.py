@@ -247,6 +247,9 @@ class LanguageManager:
                     "issues": "Key Issues",
                     "countermeasures": "Countermeasures"
                 },
+                "cards": {
+                    "summaryQueryTable": "サマリー検索結果"
+                },
                 "login": {
                     "failed": "ログイン失敗",
                     "incorrect": "ユーザー名またはパスワードが違います。",
@@ -323,6 +326,9 @@ class LanguageManager:
                     "issues": "Key Issues",
                     "countermeasures": "Countermeasures"
                 },
+                "cards": {
+                    "summaryQueryTable": "摘要查詢結果"
+                },
                 "login": {
                     "failed": "登入失敗",
                     "incorrect": "使用者名稱或密碼錯誤。",
@@ -398,6 +404,9 @@ class LanguageManager:
                     "keyOutput": "Key Machine Output",
                     "issues": "Key Issues",
                     "countermeasures": "Countermeasures"
+                },
+                "cards": {
+                    "summaryQueryTable": "Summary Query Results"
                 },
                 "login": {
                     "failed": "Login Failed",
