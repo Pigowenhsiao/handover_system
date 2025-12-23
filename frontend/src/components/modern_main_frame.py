@@ -348,6 +348,8 @@ class ModernMainFrame:
         style.configure('MainContent.TFrame', background=colors['background'])
         style.configure('Card.TFrame', background=colors['surface'], relief='flat')
         style.configure('Toolbar.TFrame', background=colors['surface'], relief='flat')
+        style.configure('Status.TFrame', background=colors['surface'], relief='flat')
+        style.configure('Status.TLabel', background=colors['surface'], foreground=colors['text_secondary'])
         
         # 按鈕樣式
         style.configure('Primary.TButton',
@@ -495,14 +497,18 @@ class ModernMainFrame:
         
         # 創建頂部工具欄
         self.create_top_toolbar()
-        
+
+        # 主內容容器（側邊欄 + 內容）
+        self.body_container = ttk.Frame(self.main_container, style='Modern.TFrame')
+        self.body_container.pack(fill='both', expand=True)
+
         # 創建側邊導航欄
         self.create_sidebar()
         self._update_auth_ui()
         
         # 創建主內容區域
         self.create_main_content()
-        
+
         # 創建狀態欄
         self.create_status_bar()
 
@@ -591,7 +597,8 @@ class ModernMainFrame:
     
     def create_sidebar(self):
         """創建側邊導航欄"""
-        self.sidebar_frame = ttk.Frame(self.main_container, width=220, style='Sidebar.TFrame')
+        parent = getattr(self, "body_container", self.main_container)
+        self.sidebar_frame = ttk.Frame(parent, width=220, style='Sidebar.TFrame')
         self.sidebar_frame.pack(side='left', fill='y', padx=0, pady=0)
         self.sidebar_frame.pack_propagate(False)
         
@@ -660,7 +667,8 @@ class ModernMainFrame:
     def create_main_content(self):
         """創建主內容區域"""
         # 內容容器
-        self.content_container = ttk.Frame(self.main_container, style='MainContent.TFrame')
+        parent = getattr(self, "body_container", self.main_container)
+        self.content_container = ttk.Frame(parent, style='MainContent.TFrame')
         self.content_container.pack(side='left', fill='both', expand=True, padx=0, pady=0)
         
         # 內容區域（使用 Card 設計）
@@ -706,7 +714,13 @@ class ModernMainFrame:
     
     def create_status_bar(self):
         """創建狀態欄"""
-        self.status_frame = ttk.Frame(self.main_container, height=30, style='Toolbar.TFrame')
+        self.status_container = ttk.Frame(self.main_container, style='Status.TFrame')
+        self.status_container.pack(side='bottom', fill='x', pady=0)
+
+        self.status_separator = ttk.Separator(self.status_container, orient='horizontal', style='Line.TSeparator')
+        self.status_separator.pack(side='top', fill='x')
+
+        self.status_frame = ttk.Frame(self.status_container, height=32, style='Status.TFrame')
         self.status_frame.pack(side='bottom', fill='x', pady=0)
         self.status_frame.pack_propagate(False)
         
@@ -718,7 +732,7 @@ class ModernMainFrame:
         )
         self.status_label.pack(side='left', padx=20)
         self._set_status("status.ready", "就緒")
-
+        
         self.status_info_label = ttk.Label(
             self.status_frame,
             font=('Segoe UI', 9),

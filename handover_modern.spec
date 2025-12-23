@@ -28,7 +28,7 @@ block_cipher = None
 
 
 a = Analysis(
-    ["run_modern_system.py"],
+    ["handover_system.py"],
     pathex=[str(project_root)],
     binaries=binaries,
     datas=datas,
@@ -70,3 +70,4 @@ coll = COLLECT(
     upx_exclude=[],
     name="HandoverSystem",
 )
+

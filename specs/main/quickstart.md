@@ -8,7 +8,7 @@
 ## インストールと起動
 ```bash
 pip install -r requirements.txt
-python run_modern_system.py
+python handover_system.py
 ```
 
 既定の管理者アカウント：`admin` / `admin123`
@@ -20,4 +20,10 @@ python run_modern_system.py
 
 ## データと設定
 - SQLite：`data/handover_system.db`
+<<<<<<< Updated upstream
 - システム設定：`handover_settings.json`
+=======
+- 系統設定：`handover_settings.json`
+
+
+>>>>>>> Stashed changes

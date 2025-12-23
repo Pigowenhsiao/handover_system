@@ -3,7 +3,7 @@
 ## 🚀 すぐに起動
 
 ```bash
-python run_modern_system.py
+python handover_system.py
 ```
 
 ## 💻 システム特性
@@ -59,3 +59,4 @@ python run_modern_system.py
 ```bash
 python start_modern_ui.py
 ```
+

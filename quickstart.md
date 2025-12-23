@@ -12,7 +12,7 @@
    ```
 2. モダン UI の起動：
    ```bash
-   python run_modern_system.py
+   python handover_system.py
    ```
 
 既定の管理者アカウント：`admin` / `admin123`
@@ -37,5 +37,9 @@
 
 ## 5. 設定とバックアップ
 
+<<<<<<< Updated upstream
 - システム設定（バックアップ間隔）は `handover_settings.json` に保存
 - 定期的に `data/handover_system.db` のバックアップを推奨
+=======
+
+>>>>>>> Stashed changes

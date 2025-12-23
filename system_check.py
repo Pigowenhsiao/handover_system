@@ -116,7 +116,7 @@ def main():
     
     if overall_success:
         print("\n系統已準備就緒，可以執行以下命令啟動應用程式:")
-        print("  python run_modern_system.py")
+        print("  python handover_system.py")
     else:
         print("\n發現問題，請先解決後再嘗試啟動應用程式")
     
@@ -126,3 +126,4 @@ def main():
 if __name__ == "__main__":
     success = main()
     sys.exit(0 if success else 1)
+

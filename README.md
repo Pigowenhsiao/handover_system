@@ -13,10 +13,17 @@ Tkinter で作成した単機版引き継ぎシステムです。日報入力、
 - Delay List / Summary Actual：Excel インポート → 仮保存 → アップロード。日付範囲で検索・編集。
 - 管理：ユーザー/翻訳/シフト/エリア管理。システム設定でバックアップ間隔を保存。
 
+<<<<<<< Updated upstream
 ## 使い方
 1. 依存関係をインストール：`pip install -r requirements.txt`
 2. 起動（モダン UI 推奨）：`python run_modern_system.py`
 3. 起動後、ログイン前に言語を選択。ログイン後、各ページで日報入力・インポート/アップロード・管理を実施。
+=======
+## 使用方式
+1. 安裝依賴：`pip install -r requirements.txt`
+2. 啟動（建議現代化介面）：`python handover_system.py`
+3. 介面啟動後，登入前可先選擇語言；登入後在各分頁填寫日報、匯入/上傳報表或管理使用者與選項。
+>>>>>>> Stashed changes
 
 直接モダン UI を起動（依存チェックなし）：`python start_modern_ui.py`
 
@@ -27,5 +34,9 @@ Tkinter で作成した単機版引き継ぎシステムです。日報入力、
 - システム設定は `handover_settings.json` に保存されます。
 - Pillow は旧版 UI の画像機能のみ必要です。未使用なら不要です。
 
+<<<<<<< Updated upstream
 ## 実行ファイル化
 PyInstaller の固定設定を使用：`pyinstaller handover_modern.spec`
+=======
+
+>>>>>>> Stashed changes

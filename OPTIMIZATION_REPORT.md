@@ -263,7 +263,7 @@ score, level, desc = password_validator.get_strength_score("Test@12345")
 
 ```bash
 # 方式 1: 使用現代化啟動器
-python run_modern_system.py
+python handover_system.py
 
 # 方式 2: 直接啟動現代化 UI
 python start_modern_ui.py
@@ -327,7 +327,7 @@ python tests/test_modern_ui.py
 1. **啟動系統**
 ```bash
 cd /home/pigo/Documents/python/handover_system
-python run_modern_system.py
+python handover_system.py
 ```
 
 2. **系統初始化**
@@ -424,7 +424,7 @@ handover_system/
 ├── tests/                            # 測試
 │   └── test_modern_ui.py           # ✅ UI 測試
 ├── start_modern_ui.py              # ✅ 現代化啟動器
-├── run_modern_system.py            # ✅ 完整系統啟動器
+├── handover_system.py            # ✅ 完整系統啟動器
 └── data/handover_system.db              # 資料庫檔案
 ```
 
@@ -535,4 +535,5 @@ pip install -r requirements.txt
 **報告生成時間**: 2025-12-10 02:30:00
 **報告生成者**: AI Assistant
 **專案狀態**: ✅ 已完成
+
 

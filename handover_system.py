@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """
-Legacy launcher for backward compatibility.
-Use handover_system.py instead.
+電子引き継ぎシステム - モダン版ランチャー
+修正・最適化・モダンUIを含む
 """
-<<<<<<< Updated upstream
 
 import sys
 import os
@@ -72,7 +71,7 @@ def start_modern_ui():
         
         # 創建主視窗
         root = tk.Tk()
-        root.title("電子交接系統 v2.2.1")
+        root.title("電子交接系統 v2.2")
         root.geometry("1300x800")
         
         # 設置高 DPI 支援
@@ -122,7 +121,7 @@ def prompt_continue(message, default=True):
 def main():
     """メイン関数"""
     print("=" * 70)
-    print("電子引き継ぎシステム - モダン版 v2.2.1")
+    print("電子引き継ぎシステム - モダン版 v2.2")
     print("=" * 70)
     print()
     
@@ -138,9 +137,6 @@ def main():
     
     # 啟動現代化 UI
     start_modern_ui()
-=======
-from handover_system import main
->>>>>>> Stashed changes
 
 
 if __name__ == "__main__":

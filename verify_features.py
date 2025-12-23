@@ -12,7 +12,7 @@ def check_core_components():
     print("檢查核心組件...")
 
     core_files = [
-        "run_modern_system.py",
+        "handover_system.py",
         "start_modern_ui.py",
         "auth.py",
         "models.py",
@@ -120,3 +120,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
