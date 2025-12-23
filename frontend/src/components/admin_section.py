@@ -270,20 +270,41 @@ class UserManagementSection:
                 self.lang_manager.get_text("admin.selectUserToUpdate", "請先選擇要更新的使用者")
             )
             return
-        
-        # 在實際應用中，這會調用後端API更新用戶
-        # 目前僅更新表格中選定項目
+
         try:
             item_id = self.tree.item(selection[0])["values"][0]
-            self.tree.item(selection[0], values=(
-                item_id,
-                self.username_var.get().strip(),
-                self.email_var.get().strip(),
-                self.role_var.get(),
-                "是" if self.active_var.get() else "否",
-                datetime.now().strftime("%Y-%m-%d %H:%M")
-            ))
-            
+            username = self.username_var.get().strip()
+            if not username:
+                messagebox.showwarning(
+                    self.lang_manager.get_text("common.warning", "警告"),
+                    self.lang_manager.get_text("admin.requiredFields", "使用者名稱和密碼是必填字段")
+                )
+                return
+            role = self.role_var.get().strip() or "user"
+            password = self.password_var.get().strip()
+
+            with SessionLocal() as db:
+                user = db.query(User).filter(User.id == item_id).first()
+                if not user:
+                    messagebox.showerror(
+                        self.lang_manager.get_text("common.error", "錯誤"),
+                        self.lang_manager.get_text("admin.userNotFound", "找不到使用者")
+                    )
+                    return
+                if user.username != username:
+                    if db.query(User).filter(User.username == username, User.id != item_id).first():
+                        messagebox.showwarning(
+                            self.lang_manager.get_text("common.warning", "警告"),
+                            self.lang_manager.get_text("admin.userExists", "使用者名稱已存在")
+                        )
+                        return
+                user.username = username
+                user.role = role
+                if password:
+                    user.password_hash = hash_password(password)
+                db.commit()
+            self.reset_fields()
+            self.load_users()
             messagebox.showinfo(
                 self.lang_manager.get_text("common.success", "成功"),
                 self.lang_manager.get_text("admin.userUpdated", "使用者已更新")
@@ -311,17 +332,29 @@ class UserManagementSection:
         )
         
         if result:
-            # 在實際應用中，這會調用後端API刪除用戶
-            # 目前僅從表格中刪除項目
-            self.tree.delete(selection)
-            
-            # 重置輸入字段
-            self.reset_fields()
-            
-            messagebox.showinfo(
-                self.lang_manager.get_text("common.success", "成功"),
-                self.lang_manager.get_text("admin.userDeleted", "使用者已刪除")
-            )
+            try:
+                item_id = self.tree.item(selection[0])["values"][0]
+                with SessionLocal() as db:
+                    user = db.query(User).filter(User.id == item_id).first()
+                    if not user:
+                        messagebox.showerror(
+                            self.lang_manager.get_text("common.error", "錯誤"),
+                            self.lang_manager.get_text("admin.userNotFound", "找不到使用者")
+                        )
+                        return
+                    db.delete(user)
+                    db.commit()
+                self.reset_fields()
+                self.load_users()
+                messagebox.showinfo(
+                    self.lang_manager.get_text("common.success", "成功"),
+                    self.lang_manager.get_text("admin.userDeleted", "使用者已刪除")
+                )
+            except Exception as exc:
+                messagebox.showerror(
+                    self.lang_manager.get_text("common.error", "錯誤"),
+                    self.lang_manager.get_text("admin.userDeleteFailed", "刪除使用者失敗：{error}").format(error=exc)
+                )
     
     def on_tree_select(self, event):
         """處理表格項目選擇事件"""
@@ -361,45 +394,40 @@ class UserManagementSection:
         # 獲取選定的使用者名稱
         item_values = self.tree.item(selection[0])["values"]
         username = item_values[1]
-        
+
         # 確認對話框
         result = messagebox.askyesno(
             self.lang_manager.get_text("common.confirm", "確認"),
             self.lang_manager.get_text("admin.confirmResetPassword", f"確定要重設使用者 '{username}' 的密碼嗎？"),
             icon="warning"
         )
-        
+
         if result:
             try:
-                # 打開密碼變更對話框
-                try:
-                    from frontend.src.components.password_change_dialog import PasswordChangeDialog
-                    
-                    # 假設我們有一個 get_current_user 方法或類似方法
-                    PasswordChangeDialog(
-                        parent=self.parent,
-                        lang_manager=self.lang_manager,
-                        current_username=username,
-                        on_password_changed=lambda: messagebox.showinfo(
-                            self.lang_manager.get_text("common.success", "成功"),
-                            self.lang_manager.get_text("admin.passwordChanged", "密碼已成功變更")
+                new_password = tk.simpledialog.askstring(
+                    self.lang_manager.get_text("admin.resetPasswordTitle", "重設密碼"),
+                    self.lang_manager.get_text(
+                        "admin.resetPasswordPrompt",
+                        f"請輸入使用者 '{username}' 的新密碼："
+                    ),
+                    show="*"
+                )
+                if not new_password:
+                    return
+                with SessionLocal() as db:
+                    user = db.query(User).filter(User.username == username).first()
+                    if not user:
+                        messagebox.showerror(
+                            self.lang_manager.get_text("common.error", "錯誤"),
+                            self.lang_manager.get_text("admin.userNotFound", "找不到使用者")
                         )
-                    )
-                except ImportError:
-                    # 如果無法導入，顯示簡單的輸入框
-                    new_password = tk.simpledialog.askstring(
-                        "重設密碼",
-                        f"請輸入使用者 '{username}' 的新密碼：",
-                        show="*"
-                    )
-                    
-                    if new_password:
-                        # 在實際應用中，這會調用後端API重設密碼
-                        messagebox.showinfo(
-                            self.lang_manager.get_text("common.success", "成功"),
-                            self.lang_manager.get_text("admin.passwordResetSuccess", f"使用者 '{username}' 的密碼已重設")
-                        )
-                        
+                        return
+                    user.password_hash = hash_password(new_password)
+                    db.commit()
+                messagebox.showinfo(
+                    self.lang_manager.get_text("common.success", "成功"),
+                    self.lang_manager.get_text("admin.passwordResetSuccess", f"使用者 '{username}' 的密碼已重設")
+                )
             except Exception as e:
                 messagebox.showerror(
                     self.lang_manager.get_text("common.error", "錯誤"),

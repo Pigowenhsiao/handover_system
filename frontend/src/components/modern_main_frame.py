@@ -1572,6 +1572,16 @@ class ModernMainFrame:
             "key_output",
             "key_issues",
             "countermeasures",
+            "equip_id",
+            "equip_description",
+            "equip_start_time",
+            "equip_impact_qty",
+            "equip_action",
+            "equip_image",
+            "lot_id",
+            "lot_description",
+            "lot_status",
+            "lot_notes",
         )
         self.summary_query_columns = cols
         self.summary_query_header_keys = [
@@ -1581,6 +1591,16 @@ class ModernMainFrame:
             ("summaryQuery.keyOutput", "Key Machine Output"),
             ("summaryQuery.keyIssues", "Key Issues"),
             ("summaryQuery.countermeasures", "Countermeasures"),
+            ("equipment.equipId", "設備號碼"),
+            ("summaryQuery.equipmentDescription", "設備異常內容"),
+            ("equipment.startTime", "發生時刻"),
+            ("equipment.impactQty", "影響數量"),
+            ("equipment.actionTaken", "對應內容"),
+            ("common.image", "異常圖片"),
+            ("lot.lotId", "批號"),
+            ("summaryQuery.lotDescription", "批次異常內容"),
+            ("lot.status", "處置狀況"),
+            ("lot.notes", "特記事項"),
         ]
 
         self.summary_query_tree = ttk.Treeview(
@@ -3550,13 +3570,29 @@ class ModernMainFrame:
             "date": 110,
             "shift": 90,
             "area": 120,
-            "key_output": 260,
-            "key_issues": 260,
-            "countermeasures": 260,
+            "key_output": 220,
+            "key_issues": 220,
+            "countermeasures": 220,
+            "equip_id": 110,
+            "equip_description": 220,
+            "equip_start_time": 110,
+            "equip_impact_qty": 90,
+            "equip_action": 200,
+            "equip_image": 160,
+            "lot_id": 110,
+            "lot_description": 200,
+            "lot_status": 140,
+            "lot_notes": 180,
+        }
+        center_cols = {
+            "date",
+            "shift",
+            "area",
+            "equip_impact_qty",
         }
         for col, (key, default) in zip(self.summary_query_columns, self.summary_query_header_keys):
             self.summary_query_tree.heading(col, text=self._t(key, default))
-            anchor = "center" if col in ("date", "shift", "area") else "w"
+            anchor = "center" if col in center_cols else "w"
             self.summary_query_tree.column(
                 col,
                 width=widths.get(col, 140),
@@ -4239,19 +4275,78 @@ class ModernMainFrame:
                     DailyReport.area,
                     DailyReport.shift,
                 ).all()
-            for row in rows:
-                self.summary_query_tree.insert(
-                    "",
-                    "end",
-                    values=(
-                        row.date.strftime("%Y-%m-%d"),
-                        self._format_shift_display(row.shift),
-                        row.area,
-                        normalize(row.summary_key_output),
-                        normalize(row.summary_issues),
-                        normalize(row.summary_countermeasures),
-                    ),
+                if not rows:
+                    return
+                report_ids = [row.id for row in rows]
+                equipment_rows = (
+                    db.query(EquipmentLog)
+                    .filter(EquipmentLog.report_id.in_(report_ids))
+                    .order_by(EquipmentLog.report_id, EquipmentLog.id)
+                    .all()
                 )
+                lot_rows = (
+                    db.query(LotLog)
+                    .filter(LotLog.report_id.in_(report_ids))
+                    .order_by(LotLog.report_id, LotLog.id)
+                    .all()
+                )
+
+            equipment_by_report = defaultdict(list)
+            for log in equipment_rows:
+                equipment_by_report[log.report_id].append(log)
+
+            lot_by_report = defaultdict(list)
+            for log in lot_rows:
+                lot_by_report[log.report_id].append(log)
+
+            equip_blanks = [""] * 6
+            lot_blanks = [""] * 4
+
+            for row in rows:
+                summary_values = (
+                    row.date.strftime("%Y-%m-%d"),
+                    self._format_shift_display(row.shift),
+                    row.area,
+                    normalize(row.summary_key_output),
+                    normalize(row.summary_issues),
+                    normalize(row.summary_countermeasures),
+                )
+                equip_logs = equipment_by_report.get(row.id, [])
+                lot_logs = lot_by_report.get(row.id, [])
+
+                if equip_logs or lot_logs:
+                    for log in equip_logs:
+                        equip_values = [
+                            normalize(log.equip_id),
+                            normalize(log.description),
+                            normalize(log.start_time),
+                            "" if log.impact_qty is None else log.impact_qty,
+                            normalize(log.action_taken),
+                            normalize(log.image_path),
+                        ]
+                        self.summary_query_tree.insert(
+                            "",
+                            "end",
+                            values=summary_values + tuple(equip_values) + tuple(lot_blanks),
+                        )
+                    for log in lot_logs:
+                        lot_values = [
+                            normalize(log.lot_id),
+                            normalize(log.description),
+                            normalize(log.status),
+                            normalize(log.notes),
+                        ]
+                        self.summary_query_tree.insert(
+                            "",
+                            "end",
+                            values=summary_values + tuple(equip_blanks) + tuple(lot_values),
+                        )
+                else:
+                    self.summary_query_tree.insert(
+                        "",
+                        "end",
+                        values=summary_values + tuple(equip_blanks) + tuple(lot_blanks),
+                    )
         except Exception as exc:
             messagebox.showerror(
                 self._t("common.error", "錯誤"),
