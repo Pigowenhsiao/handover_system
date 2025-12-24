@@ -283,7 +283,10 @@
     "basicInfoLocked": "⚠️ 先に基本情報を保存してください",
     "attendanceSaved": "✅ 出勤データを保存しました",
     "exitBlockedPendingImports": "未アップロードのデータがあります。アップロードまたは削除してから終了してください。",
-    "exitBlockedMissingContext": "日報の基本情報が未完了です。終了前に日付・シフト・区域を設定して保存してください。"
+    "exitBlockedMissingContext": "日報の基本情報が未完了です。終了前に日付・シフト・区域を設定して保存してください。",
+    "forceExitTitle": "強制終了しますか？",
+    "forceExitUnsavedData": "データが未保存です。強制終了しますか？未保存のデータは失われる可能性があります。",
+    "forceExitPendingImports": "未アップロードのデータがあります。強制終了しますか？未保存のデータは失われる可能性があります。"
   },
   "settings": {
     "databasePath": "データベースパス:",
@@ -295,6 +298,10 @@
     "saved": "✅ 設定を保存しました",
     "selectDatabase": "データベースを選択",
     "databasePathUpdated": "データベースパスを更新しました。システムを終了しますので、再起動して反映してください。",
+    "databaseInitTitle": "データベース初期化",
+    "databaseInitBody": "選択したデータベースが存在しません。現在のデータベースからコピーしますか？「いいえ」を選ぶと空のデータベースを作成します。",
+    "databaseInitCopyFailed": "現在のデータベースをコピーできませんでした：{error}",
+    "databaseInitCreateFailed": "空のデータベースを作成できませんでした：{error}",
     "saveFailed": "設定の保存に失敗しました：{error}"
   },
   "stats": {

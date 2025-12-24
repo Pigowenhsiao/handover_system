@@ -283,7 +283,10 @@
     "basicInfoLocked": "⚠️ Please save basic information first",
     "attendanceSaved": "✅ Attendance saved",
     "exitBlockedPendingImports": "There are pending import records. Please upload or clear them before exiting.",
-    "exitBlockedMissingContext": "Daily report basics are incomplete. Please set date/shift/area and save before exiting."
+    "exitBlockedMissingContext": "Daily report basics are incomplete. Please set date/shift/area and save before exiting.",
+    "forceExitTitle": "Force Exit?",
+    "forceExitUnsavedData": "Data has not been saved. Force exit? Unsaved data may be lost.",
+    "forceExitPendingImports": "There are pending import records. Force exit? Unsaved data may be lost."
   },
   "settings": {
     "databasePath": "Database Path:",
@@ -295,6 +298,10 @@
     "saved": "✅ Settings saved",
     "selectDatabase": "Select Database",
     "databasePathUpdated": "Database path updated. The system will close; please restart to apply the change.",
+    "databaseInitTitle": "Initialize Database",
+    "databaseInitBody": "The selected database does not exist. Copy data from the current database? Selecting No will create a blank database.",
+    "databaseInitCopyFailed": "Failed to copy the current database: {error}",
+    "databaseInitCreateFailed": "Failed to create a blank database: {error}",
     "saveFailed": "Failed to save settings: {error}"
   },
   "stats": {

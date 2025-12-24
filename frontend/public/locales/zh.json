@@ -283,7 +283,10 @@
     "basicInfoLocked": "⚠️ 請先儲存基本資訊",
     "attendanceSaved": "✅ 出勤資料已儲存",
     "exitBlockedPendingImports": "尚有未上傳資料，請先上傳或清除後再離開。",
-    "exitBlockedMissingContext": "日報基本資訊未完成，無法在離開前寫入資料。請先設定日期、班別、區域並儲存。"
+    "exitBlockedMissingContext": "日報基本資訊未完成，無法在離開前寫入資料。請先設定日期、班別、區域並儲存。",
+    "forceExitTitle": "強制結束？",
+    "forceExitUnsavedData": "資料尚未寫入，是否強制結束？未寫入資料可能遺失。",
+    "forceExitPendingImports": "尚有未上傳資料，是否強制結束？未上傳資料可能遺失。"
   },
   "settings": {
     "databasePath": "資料庫路徑:",
@@ -295,6 +298,10 @@
     "saved": "✅ 設定已儲存",
     "selectDatabase": "選擇資料庫",
     "databasePathUpdated": "資料庫路徑已更新。系統將關閉，請重新啟動以套用新設定。",
+    "databaseInitTitle": "初始化資料庫",
+    "databaseInitBody": "選擇的資料庫不存在，是否從目前資料庫複製資料？選擇否將建立空白資料庫。",
+    "databaseInitCopyFailed": "無法複製目前資料庫：{error}",
+    "databaseInitCreateFailed": "無法建立空白資料庫：{error}",
     "saveFailed": "設定儲存失敗：{error}"
   },
   "stats": {

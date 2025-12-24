@@ -43,7 +43,7 @@
 - 翻訳は GUI からインポート/更新でき、即時反映。
 
 ## Functional Requirements 概要
-- ログイン後、日報の基本情報（日時/シフト/エリア）を保存するまで他機能は操作不可。
+- ログイン後、日報の基本情報（日時/シフト/エリア）を保存するまで出勤/設備異常/異常ロット/管理などの操作は不可。ただし出勤率/摘要查詢/異常履歴はログイン後であれば基本情報未保存でも閲覧可能。
 - 同一 日付+シフト+エリア は同一日報として上書き。
 - 基本情報：日付はカレンダー選択。シフト選択 [Day, Night]。エリア選択 [etching_D, etching_E, litho, thin_film]。記入者はログインユーザーを自動反映。
 - 出勤：正社員/契約社員の定員、出勤、欠勤、理由。
@@ -57,8 +57,9 @@
 - User：`id`、`username`（一意）、`password_hash`、`role`（admin/user）。
 - ShiftOption：`id`、`name`（Day/Night 等）。
 - AreaOption：`id`、`name`（etching_D、etching_E、litho、thin_film 等）。
-- DailyReport：`id`、`date`、`shift`、`area`、`author_id`、`created_at`、`summary_key_output`、`summary_issues`、`summary_countermeasures`。
+- DailyReport：`id`、`date`、`shift`、`area`、`author_id`、`created_at`、`last_modified_by`、`last_modified_at`、`summary_key_output`、`summary_issues`、`summary_countermeasures`。
 - AttendanceEntry：`id`、`report_id`、`category`（Regular/Contract）、`scheduled_count`、`present_count`、`absent_count`、`reason`。
+- OvertimeEntry：`id`、`report_id`、`category`、`count`、`notes`。
 - EquipmentLog：`id`、`report_id`、`equip_id`、`description`、`start_time`、`impact_qty`、`action_taken`、`image_path`（任意）。
 - LotLog：`id`、`report_id`、`lot_id`、`description`、`status`、`notes`。
 - DelayEntry：`id`、`delay_date`、`time_range`、`reactor`、`process`、`lot`、`wafer`、`progress`、`prev_steps`、`prev_time`、`severity`、`action`、`note`。
@@ -74,7 +75,7 @@
 ## Important Constraints
 - ネットワークやクラウドは使用しない。
 - Python 3.9+ 互換を維持。
-- UI と DB は同一プロジェクト配下で配置。DB は `data/handover_system.db`。
+- UI と DB は同一プロジェクト配下で配置。DB は既定で `data/handover_system.db`、設定 (`handover_settings.json`) でパス変更可能。
 
 ## External Dependencies
 - 無外部 API 或服務；依賴本機套件：SQLAlchemy、pandas、openpyxl、matplotlib、bcrypt（Tkinter 為 Python 內建）。

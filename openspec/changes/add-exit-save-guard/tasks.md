@@ -7,5 +7,7 @@
 
 ## Manual Verification
 - Change the database path, confirm the app saves, then closes and requires restart.
-- Attempt to exit with pending import rows and confirm exit is blocked.
+- Select a non-existent database path and confirm the app prompts to copy or create a blank database.
+- Attempt to exit with pending import rows and confirm a force-exit prompt appears.
+- Simulate a save failure and confirm a force-exit prompt appears.
 - Modify attendance data, close the app, and confirm the data persists after restart.

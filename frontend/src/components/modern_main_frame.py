@@ -9,6 +9,7 @@ from collections import defaultdict
 import calendar
 import json
 import os
+import shutil
 import pandas as pd
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
@@ -205,12 +206,18 @@ class ModernMainFrame:
 
     def _apply_text_widget_colors(self, widget):
         colors = self.COLORS
+        border_color = colors.get('divider', '#E0E0E0')
         widget.configure(
             background=colors['surface'],
             foreground=colors['text_primary'],
             insertbackground=colors['text_primary'],
             selectbackground=colors['primary_dark'],
             selectforeground='white',
+            highlightthickness=1,
+            highlightbackground=border_color,
+            highlightcolor=colors['primary'],
+            relief='solid',
+            bd=1,
         )
 
     def _apply_theme_to_fixed_widgets(self):
@@ -313,10 +320,20 @@ class ModernMainFrame:
         style.configure('TEntry',
                        fieldbackground=colors['surface'],
                        foreground=colors['text_primary'],
+                       bordercolor=colors['divider'],
+                       lightcolor=colors['divider'],
+                       darkcolor=colors['divider'],
+                       borderwidth=1,
+                       relief='solid',
                        padding=(6, 4))
         style.configure('TCombobox',
                        fieldbackground=colors['surface'],
-                       foreground=colors['text_primary'])
+                       foreground=colors['text_primary'],
+                       bordercolor=colors['divider'],
+                       lightcolor=colors['divider'],
+                       darkcolor=colors['divider'],
+                       borderwidth=1,
+                       relief='solid')
         style.map('TCombobox',
                  fieldbackground=[('readonly', colors['surface'])],
                  foreground=[('readonly', colors['text_primary'])])
@@ -438,7 +455,20 @@ class ModernMainFrame:
                        fieldbackground=colors['surface'],
                        foreground=colors['text_primary'],
                        font=('Segoe UI', 10),
+                       bordercolor=colors['divider'],
+                       lightcolor=colors['divider'],
+                       darkcolor=colors['divider'],
+                       borderwidth=1,
+                       relief='solid',
                        padding=(8, 5))
+        style.configure('Modern.TCombobox',
+                       fieldbackground=colors['surface'],
+                       foreground=colors['text_primary'],
+                       bordercolor=colors['divider'],
+                       lightcolor=colors['divider'],
+                       darkcolor=colors['divider'],
+                       borderwidth=1,
+                       relief='solid')
         
         # 進度條樣式
         style.configure('Horizontal.TProgressbar',
@@ -899,7 +929,7 @@ class ModernMainFrame:
         key_output_label = ttk.Label(basic_card, style='CardTitle.TLabel')
         self._register_text(key_output_label, "summary.keyOutput", "🔑 Key Machine Output:", scope="page")
         key_output_label.pack(anchor='w', padx=self.layout["card_pad"], pady=(20, 5))
-        self.key_output_text = tk.Text(basic_card, height=4, font=('Segoe UI', 10), relief='flat', bg=self.COLORS['surface'], wrap="word")
+        self.key_output_text = tk.Text(basic_card, height=4, font=('Segoe UI', 10), bg=self.COLORS['surface'], wrap="word")
         self._register_text_widget(self.key_output_text)
         self.key_output_text.pack(fill='x', padx=self.layout["card_pad"], pady=(0, 15))
         
@@ -907,7 +937,7 @@ class ModernMainFrame:
         key_issues_label = ttk.Label(basic_card, style='CardTitle.TLabel')
         self._register_text(key_issues_label, "summary.issues", "⚠️ Key Issues:", scope="page")
         key_issues_label.pack(anchor='w', padx=self.layout["card_pad"], pady=(15, 5))
-        self.key_issues_text = tk.Text(basic_card, height=4, font=('Segoe UI', 10), relief='flat', bg=self.COLORS['surface'], wrap="word")
+        self.key_issues_text = tk.Text(basic_card, height=4, font=('Segoe UI', 10), bg=self.COLORS['surface'], wrap="word")
         self._register_text_widget(self.key_issues_text)
         self.key_issues_text.pack(fill='x', padx=self.layout["card_pad"], pady=(0, 15))
         
@@ -915,7 +945,7 @@ class ModernMainFrame:
         counter_label = ttk.Label(basic_card, style='CardTitle.TLabel')
         self._register_text(counter_label, "summary.countermeasures", "✅ Countermeasures:", scope="page")
         counter_label.pack(anchor='w', padx=self.layout["card_pad"], pady=(15, 5))
-        self.countermeasures_text = tk.Text(basic_card, height=4, font=('Segoe UI', 10), relief='flat', bg=self.COLORS['surface'], wrap="word")
+        self.countermeasures_text = tk.Text(basic_card, height=4, font=('Segoe UI', 10), bg=self.COLORS['surface'], wrap="word")
         self._register_text_widget(self.countermeasures_text)
         self.countermeasures_text.pack(fill='x', padx=self.layout["card_pad"], pady=(0, 20))
 
@@ -1292,7 +1322,7 @@ class ModernMainFrame:
         desc_label = ttk.Label(form_frame, font=('Segoe UI', 10))
         self._register_text(desc_label, "common.description", "異常內容:", scope="page")
         desc_label.grid(row=2, column=0, sticky='w', pady=self.layout["row_pad"])
-        self.equip_desc_text = tk.Text(form_frame, height=4, font=('Segoe UI', 10), relief='flat', bg=self.COLORS['surface'], wrap="word")
+        self.equip_desc_text = tk.Text(form_frame, height=4, font=('Segoe UI', 10), bg=self.COLORS['surface'], wrap="word")
         self._register_text_widget(self.equip_desc_text)
         self.equip_desc_text.grid(row=2, column=1, columnspan=3, sticky='ew', padx=self.layout["field_gap"], pady=self.layout["row_pad"])
         
@@ -1300,7 +1330,7 @@ class ModernMainFrame:
         action_label = ttk.Label(form_frame, font=('Segoe UI', 10))
         self._register_text(action_label, "equipment.actionTaken", "對應內容:", scope="page")
         action_label.grid(row=3, column=0, sticky='w', pady=self.layout["row_pad"])
-        self.action_text = tk.Text(form_frame, height=4, font=('Segoe UI', 10), relief='flat', bg=self.COLORS['surface'], wrap="word")
+        self.action_text = tk.Text(form_frame, height=4, font=('Segoe UI', 10), bg=self.COLORS['surface'], wrap="word")
         self._register_text_widget(self.action_text)
         self.action_text.grid(row=3, column=1, columnspan=3, sticky='ew', padx=self.layout["field_gap"], pady=self.layout["row_pad"])
         
@@ -1355,7 +1385,7 @@ class ModernMainFrame:
         lot_desc_label = ttk.Label(form_frame, font=('Segoe UI', 10))
         self._register_text(lot_desc_label, "common.description", "異常內容:", scope="page")
         lot_desc_label.grid(row=1, column=0, sticky='w', pady=self.layout["row_pad"])
-        self.lot_desc_text = tk.Text(form_frame, height=4, font=('Segoe UI', 10), relief='flat', bg=self.COLORS['surface'], wrap="word")
+        self.lot_desc_text = tk.Text(form_frame, height=4, font=('Segoe UI', 10), bg=self.COLORS['surface'], wrap="word")
         self._register_text_widget(self.lot_desc_text)
         self.lot_desc_text.grid(row=1, column=1, columnspan=3, sticky='ew', padx=self.layout["field_gap"], pady=self.layout["row_pad"])
         
@@ -1372,7 +1402,7 @@ class ModernMainFrame:
         notes_label = ttk.Label(form_frame, font=('Segoe UI', 10))
         self._register_text(notes_label, "lot.notes", "特記事項:", scope="page")
         notes_label.grid(row=3, column=0, sticky='w', pady=self.layout["row_pad"])
-        self.lot_notes_text = tk.Text(form_frame, height=4, font=('Segoe UI', 10), relief='flat', bg=self.COLORS['surface'], wrap="word")
+        self.lot_notes_text = tk.Text(form_frame, height=4, font=('Segoe UI', 10), bg=self.COLORS['surface'], wrap="word")
         self._register_text_widget(self.lot_notes_text)
         self.lot_notes_text.grid(row=3, column=1, columnspan=3, sticky='ew', padx=self.layout["field_gap"], pady=self.layout["row_pad"])
         
@@ -2918,6 +2948,43 @@ class ModernMainFrame:
         )
         if not path:
             return
+        if not os.path.exists(path):
+            should_copy = messagebox.askyesno(
+                self._t("settings.databaseInitTitle", "初始化資料庫"),
+                self._t(
+                    "settings.databaseInitBody",
+                    "選擇的資料庫不存在，是否從目前資料庫複製資料？選擇否將建立空白資料庫。",
+                ),
+            )
+            if should_copy:
+                try:
+                    current_path = get_database_path()
+                    os.makedirs(os.path.dirname(path), exist_ok=True)
+                    shutil.copy2(str(current_path), path)
+                except Exception as exc:
+                    messagebox.showerror(
+                        self._t("common.error", "錯誤"),
+                        self._t(
+                            "settings.databaseInitCopyFailed",
+                            "無法複製目前資料庫：{error}",
+                        ).format(error=exc),
+                    )
+                    return
+            else:
+                try:
+                    os.makedirs(os.path.dirname(path), exist_ok=True)
+                    if not os.path.exists(path):
+                        with open(path, "a", encoding="utf-8"):
+                            pass
+                except Exception as exc:
+                    messagebox.showerror(
+                        self._t("common.error", "錯誤"),
+                        self._t(
+                            "settings.databaseInitCreateFailed",
+                            "無法建立空白資料庫：{error}",
+                        ).format(error=exc),
+                    )
+                    return
         if not self._can_close_app(confirm=False):
             return
         self.db_path_var.set(path)
@@ -2996,12 +3063,34 @@ class ModernMainFrame:
     def _has_daily_report_content(self):
         fields = []
         if hasattr(self, "key_output_text"):
-            fields.append(self.key_output_text.get("1.0", "end").strip())
+            if self.key_output_text.winfo_exists():
+                try:
+                    fields.append(self.key_output_text.get("1.0", "end").strip())
+                except tk.TclError:
+                    pass
         if hasattr(self, "key_issues_text"):
-            fields.append(self.key_issues_text.get("1.0", "end").strip())
+            if self.key_issues_text.winfo_exists():
+                try:
+                    fields.append(self.key_issues_text.get("1.0", "end").strip())
+                except tk.TclError:
+                    pass
         if hasattr(self, "countermeasures_text"):
-            fields.append(self.countermeasures_text.get("1.0", "end").strip())
+            if self.countermeasures_text.winfo_exists():
+                try:
+                    fields.append(self.countermeasures_text.get("1.0", "end").strip())
+                except tk.TclError:
+                    pass
         return any(fields)
+
+    def _safe_text_value(self, widget):
+        if widget is None:
+            return ""
+        try:
+            if not widget.winfo_exists():
+                return ""
+            return widget.get("1.0", "end").strip()
+        except tk.TclError:
+            return ""
 
     def _attempt_save_daily_report(self):
         if not (self._has_daily_report_content() or self.report_is_saved or self.active_report_id):
@@ -3041,6 +3130,12 @@ class ModernMainFrame:
         self.attendance_section.update_status_indicator()
         return True
 
+    def _confirm_force_exit(self, message_key, default_message):
+        return messagebox.askyesno(
+            self._t("status.forceExitTitle", "強制結束？"),
+            self._t(message_key, default_message),
+        )
+
     def _can_close_app(self, confirm=True):
         if confirm and not messagebox.askokcancel(
             self._t("common.quit", "離開"),
@@ -3049,18 +3144,20 @@ class ModernMainFrame:
             return False
         self._flush_inline_edits()
         if not self._attempt_save_daily_report():
-            return False
-        if not self._attempt_save_attendance():
-            return False
-        if self._has_pending_imports():
-            messagebox.showwarning(
-                self._t("common.warning", "提醒"),
-                self._t(
-                    "status.exitBlockedPendingImports",
-                    "尚有未上傳資料，請先上傳或清除後再離開。",
-                ),
+            return self._confirm_force_exit(
+                "status.forceExitUnsavedData",
+                "資料尚未寫入，是否強制結束？未寫入資料可能遺失。",
             )
-            return False
+        if not self._attempt_save_attendance():
+            return self._confirm_force_exit(
+                "status.forceExitUnsavedData",
+                "資料尚未寫入，是否強制結束？未寫入資料可能遺失。",
+            )
+        if self._has_pending_imports():
+            return self._confirm_force_exit(
+                "status.forceExitPendingImports",
+                "尚有未上傳資料，是否強制結束？未上傳資料可能遺失。",
+            )
         return True
 
     def _on_app_close(self):
@@ -3495,9 +3592,9 @@ class ModernMainFrame:
             )
             return None
 
-        key_output = self.key_output_text.get("1.0", "end").strip()
-        issues = self.key_issues_text.get("1.0", "end").strip()
-        counter = self.countermeasures_text.get("1.0", "end").strip()
+        key_output = self._safe_text_value(getattr(self, "key_output_text", None))
+        issues = self._safe_text_value(getattr(self, "key_issues_text", None))
+        counter = self._safe_text_value(getattr(self, "countermeasures_text", None))
         author_id = self.current_user.get("id")
 
         try:
