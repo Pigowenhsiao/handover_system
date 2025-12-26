@@ -5,6 +5,7 @@
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 from datetime import datetime
+from pathlib import Path
 from collections import defaultdict
 import calendar
 import json
@@ -36,6 +37,7 @@ from models import (
     ShiftOption,
     AreaOption,
     get_database_path,
+    consume_database_fallback_notice,
 )
 
 
@@ -123,6 +125,7 @@ class ModernMainFrame:
 
         # 先顯示登入畫面
         self._show_login_screen()
+        self.parent.after(0, self._notify_database_fallback)
         self.parent.protocol("WM_DELETE_WINDOW", self._on_app_close)
 
     def _t(self, key, default):
@@ -811,9 +814,73 @@ class ModernMainFrame:
             return
         version_text = self._t("header.version", "Version 0.1.2")
         db_label = self._t("settings.databasePath", "Database Path:")
-        db_path = str(get_database_path())
+        db_path = self._get_display_database_path()
         info_text = f"{version_text} | {db_label} {db_path} | Create by Pigo Hsiao"
         self.status_info_label.config(text=info_text)
+
+    def _notify_database_fallback(self):
+        notice = consume_database_fallback_notice()
+        if not notice:
+            return
+        custom_path = notice.get("custom_path", "")
+        default_path = notice.get("default_path", "")
+        initial_dir = os.path.dirname(custom_path) if custom_path else os.getcwd()
+        while True:
+            use_default = messagebox.askyesno(
+                self._t("settings.databaseFallbackTitle", "資料庫路徑無效"),
+                self._t(
+                    "settings.databaseFallbackBody",
+                    "指定的資料庫檔案不存在：{custom_path}\n"
+                    "是否改用預設資料庫？\n"
+                    "預設資料庫：{default_path}\n"
+                    "選擇「否」可自行選擇資料庫路徑。",
+                ).format(custom_path=custom_path, default_path=default_path),
+            )
+            if use_default:
+                data = self._load_settings_data()
+                default_path_value = default_path or str(get_database_path())
+                data["database_path"] = default_path_value
+                if not self._save_settings_data(data):
+                    messagebox.showerror(
+                        self._t("common.error", "錯誤"),
+                        self._t("settings.saveFailed", "設定儲存失敗：{error}").format(
+                            error="settings write failed",
+                        ),
+                    )
+                if hasattr(self, "db_path_var"):
+                    self.db_path_var.set(default_path_value)
+                self._update_status_bar_info()
+                return
+            path = filedialog.askopenfilename(
+                title=self._t("settings.selectDatabase", "選擇資料庫"),
+                initialdir=initial_dir,
+                filetypes=[("SQLite DB", "*.db"), ("All files", "*.*")],
+            )
+            if not path:
+                continue
+            if not os.path.isfile(path):
+                messagebox.showwarning(
+                    self._t("common.warning", "提醒"),
+                    self._t(
+                        "settings.databaseSelectMissing",
+                        "找不到資料庫檔案：{path}",
+                    ).format(path=path),
+                )
+                continue
+            data = self._load_settings_data()
+            data["database_path"] = path
+            if not self._save_settings_data(data):
+                messagebox.showerror(
+                    self._t("common.error", "錯誤"),
+                    self._t("settings.saveFailed", "設定儲存失敗：{error}").format(
+                        error="settings write failed",
+                    ),
+                )
+                return
+            if hasattr(self, "db_path_var"):
+                self.db_path_var.set(path)
+            self._request_restart(skip_checks=True)
+            return
     
     def show_page(self, page_id):
         """顯示指定頁面"""
@@ -2942,7 +3009,7 @@ class ModernMainFrame:
         db_path_frame = ttk.Frame(db_card, style='Card.TFrame')
         db_path_frame.pack(fill='x', padx=20, pady=(0, 15))
         
-        self.db_path_var = tk.StringVar(value=str(get_database_path()))
+        self.db_path_var = tk.StringVar(value=self._get_display_database_path())
         ttk.Entry(db_path_frame, textvariable=self.db_path_var, width=50, state='readonly', style='Modern.TEntry').pack(side='left', padx=(0, 10))
         browse_btn = ttk.Button(db_path_frame, style='Accent.TButton', command=self._browse_database_path)
         self._register_text(browse_btn, "common.browse", "瀏覽...", scope="page")
@@ -2980,10 +3047,23 @@ class ModernMainFrame:
         root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
         return os.path.join(root_dir, "handover_settings.json")
 
+    def _get_display_database_path(self):
+        data = self._load_settings_data()
+        custom_path = data.get("database_path")
+        if not custom_path:
+            return str(get_database_path())
+        custom = Path(custom_path)
+        resolved = custom
+        if not custom.is_absolute():
+            root_dir = os.path.dirname(self._settings_path())
+            resolved = (Path(root_dir) / custom).resolve()
+        if resolved.is_file():
+            return str(resolved)
+        return str(custom_path)
+
     def _load_system_settings(self):
         data = self._load_settings_data()
-        if "database_path" in data:
-            self.db_path_var.set(str(data["database_path"]))
+        self.db_path_var.set(self._get_display_database_path())
         if "auto_backup" in data:
             self.auto_backup_var.set(bool(data["auto_backup"]))
         if "backup_interval_days" in data:

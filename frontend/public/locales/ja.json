@@ -291,6 +291,9 @@
   },
   "settings": {
     "databasePath": "データベースパス:",
+    "databaseFallbackTitle": "データベースパスが見つかりません",
+    "databaseFallbackBody": "指定されたデータベースファイルが見つかりません：{custom_path}\n既定のデータベースを使用しますか？\n既定のデータベース：{default_path}\n「いいえ」を選ぶと別のデータベースを選択できます。",
+    "databaseSelectMissing": "データベースファイルが見つかりません：{path}",
     "autoBackup": "自動バックアップを有効化",
     "backupInterval": "バックアップ間隔:",
     "days": "日",

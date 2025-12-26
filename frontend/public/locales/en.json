@@ -291,6 +291,9 @@
   },
   "settings": {
     "databasePath": "Database Path:",
+    "databaseFallbackTitle": "Database Path Not Found",
+    "databaseFallbackBody": "The specified database file was not found: {custom_path}\nUse the default database?\nDefault database: {default_path}\nChoose \"No\" to select another database file.",
+    "databaseSelectMissing": "Database file not found: {path}",
     "autoBackup": "Enable Auto Backup",
     "backupInterval": "Backup Interval:",
     "days": "days",

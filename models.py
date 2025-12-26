@@ -7,7 +7,7 @@ import sys
 import shutil
 import sqlite3
 import time
-from typing import Generator, Optional
+from typing import Dict, Generator, Optional
 
 from sqlalchemy import Column, Integer, String, Date, DateTime, Text, ForeignKey, create_engine, event
 from sqlalchemy.exc import OperationalError
@@ -25,6 +25,26 @@ def _get_data_dir() -> Path:
     return data_dir
 
 
+_DATABASE_FALLBACK_NOTICE: Optional[Dict[str, str]] = None
+
+
+def _set_database_fallback_notice(custom_path: Path, default_path: Path) -> None:
+    global _DATABASE_FALLBACK_NOTICE
+    if _DATABASE_FALLBACK_NOTICE is not None:
+        return
+    _DATABASE_FALLBACK_NOTICE = {
+        "custom_path": str(custom_path),
+        "default_path": str(default_path),
+    }
+
+
+def consume_database_fallback_notice() -> Optional[Dict[str, str]]:
+    global _DATABASE_FALLBACK_NOTICE
+    notice = _DATABASE_FALLBACK_NOTICE
+    _DATABASE_FALLBACK_NOTICE = None
+    return notice
+
+
 def get_database_path() -> Path:
     db_path = _get_data_dir() / "handover_system.db"
     settings_path = _get_app_root() / "handover_settings.json"
@@ -36,8 +56,10 @@ def get_database_path() -> Path:
                 custom = Path(custom_path)
                 if not custom.is_absolute():
                     custom = (_get_app_root() / custom).resolve()
-                custom.parent.mkdir(parents=True, exist_ok=True)
-                db_path = custom
+                if custom.is_file():
+                    db_path = custom
+                else:
+                    _set_database_fallback_notice(custom, db_path)
         except Exception:
             pass
     _maybe_migrate_database(db_path)

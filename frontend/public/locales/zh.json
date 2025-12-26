@@ -291,6 +291,9 @@
   },
   "settings": {
     "databasePath": "資料庫路徑:",
+    "databaseFallbackTitle": "資料庫路徑無效",
+    "databaseFallbackBody": "指定的資料庫檔案不存在：{custom_path}\n是否改用預設資料庫？\n預設資料庫：{default_path}\n選擇「否」可自行選擇資料庫路徑。",
+    "databaseSelectMissing": "找不到資料庫檔案：{path}",
     "autoBackup": "啟用自動備份",
     "backupInterval": "備份間隔:",
     "days": "天",
