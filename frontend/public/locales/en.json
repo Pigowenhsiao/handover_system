@@ -5,7 +5,7 @@
     "login": "Login",
     "logout": "Logout",
     "subtitle": "Handover Management System",
-    "version": "Version 0.1.2"
+    "version": "Version 0.1.4"
   },
   "navigation": {
     "home": "Home",
@@ -248,7 +248,9 @@
     "rateAxis": "Attendance Rate (%)",
     "rateSeries": "Attendance Rate",
     "countChartTitle": "Attendance Count",
-    "countAxis": "Attendance Count"
+    "countAxis": "Attendance Count",
+    "overtimeCount": "Overtime Count",
+    "totalAttendance": "Total Attendance"
   },
   "abnormalHistory": {
     "startDate": "Start Date",

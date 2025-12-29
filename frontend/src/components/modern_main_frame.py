@@ -110,8 +110,11 @@ class ModernMainFrame:
         }
         self.delay_pending_records = []
         self.summary_pending_records = []
+        self._delay_pending_seq = 0
         self._summary_pending_seq = 0
         self.summary_dashboard_data = None
+        self.summary_pie_frame = None
+        self.summary_bar_frame = None
         self._cjk_font_ready = False
         self.shift_options = ["Day", "Night"]
         self.area_options = ["etching_D", "etching_E", "litho", "thin_film"]
@@ -697,7 +700,7 @@ class ModernMainFrame:
             foreground='white',
             background=self.COLORS['sidebar']
         )
-        self._register_text(self.sidebar_version_label, "header.version", "Version 0.1.2")
+        self._register_text(self.sidebar_version_label, "header.version", "Version 0.1.4")
         self.sidebar_version_label.pack(side='bottom', pady=(0, 10), padx=20, anchor='w')
         
         # 收合/展開按鈕
@@ -812,7 +815,7 @@ class ModernMainFrame:
     def _update_status_bar_info(self):
         if not hasattr(self, "status_info_label"):
             return
-        version_text = self._t("header.version", "Version 0.1.2")
+        version_text = self._t("header.version", "Version 0.1.4")
         db_label = self._t("settings.databasePath", "Database Path:")
         db_path = self._get_display_database_path()
         info_text = f"{version_text} | {db_label} {db_path} | Create by Pigo Hsiao"
@@ -1562,23 +1565,26 @@ class ModernMainFrame:
             "regular_absent",
             "contract_present",
             "contract_absent",
+            "overtime_count",
+            "total_attendance",
             "notes",
             "last_modified",
         )
         self.summary_dash_columns = cols
         self.summary_dash_header_keys = [
-            ("common.date", "日期"),
-            ("common.shift", "班別"),
-            ("common.area", "區域"),
-            ("common.author", "填寫者"),
-            ("summaryDashboard.regularPresent", "正職出勤"),
-            ("summaryDashboard.regularAbsent", "正職缺勤"),
-            ("summaryDashboard.contractPresent", "契約出勤"),
-            ("summaryDashboard.contractAbsent", "契約缺勤"),
-            ("common.notes", "備註"),
-            ("summaryDashboard.lastModified", "最後修改"),
+            ("common.date", "Date"),
+            ("common.shift", "Shift"),
+            ("common.area", "Area"),
+            ("common.author", "Author"),
+            ("summaryDashboard.regularPresent", "Regular Present"),
+            ("summaryDashboard.regularAbsent", "Regular Absent"),
+            ("summaryDashboard.contractPresent", "Contract Present"),
+            ("summaryDashboard.contractAbsent", "Contract Absent"),
+            ("summaryDashboard.overtimeCount", "Overtime Count"),
+            ("summaryDashboard.totalAttendance", "Total Attendance"),
+            ("common.notes", "Notes"),
+            ("summaryDashboard.lastModified", "Last Modified"),
         ]
-
         self.summary_dash_tree = ttk.Treeview(table_frame, columns=cols, show="headings", height=12)
         self._update_summary_dashboard_headers()
         self.summary_dash_tree.pack(side='left', fill='both', expand=True)
@@ -1970,6 +1976,8 @@ class ModernMainFrame:
     def _update_summary_dashboard_headers(self):
         if not hasattr(self, "summary_dash_tree"):
             return
+        if not self.summary_dash_tree.winfo_exists():
+            return
         for col, (key, default) in zip(self.summary_dash_columns, self.summary_dash_header_keys):
             self.summary_dash_tree.heading(col, text=self._t(key, default))
         widths = {
@@ -1981,6 +1989,8 @@ class ModernMainFrame:
             "regular_absent": 90,
             "contract_present": 90,
             "contract_absent": 90,
+            "overtime_count": 90,
+            "total_attendance": 100,
             "notes": 260,
             "last_modified": 200,
         }
@@ -1993,6 +2003,8 @@ class ModernMainFrame:
             "regular_absent": "center",
             "contract_present": "center",
             "contract_absent": "center",
+            "overtime_count": "center",
+            "total_attendance": "center",
             "notes": "w",
             "last_modified": "w",
         }
@@ -2357,13 +2369,20 @@ class ModernMainFrame:
                     .filter(AttendanceEntry.report_id.in_(report_ids))
                     .all()
                 )
+                overtime_rows = (
+                    db.query(OvertimeEntry)
+                    .filter(OvertimeEntry.report_id.in_(report_ids))
+                    .all()
+                )
 
             attendance_by_report = {}
+            overtime_by_report = {}
             for report in reports:
                 attendance_by_report[report.id] = {
                     "regular": {"present": 0, "absent": 0, "reason": ""},
                     "contract": {"present": 0, "absent": 0, "reason": ""},
                 }
+                overtime_by_report[report.id] = 0
 
             for row in attendance_rows:
                 category = (row.category or "").lower()
@@ -2381,6 +2400,10 @@ class ModernMainFrame:
                     else:
                         slot["reason"] = reason
 
+            for row in overtime_rows:
+                if row.report_id in overtime_by_report:
+                    overtime_by_report[row.report_id] += int(row.count or 0)
+
             total_present = 0
             total_absent = 0
             daily_counts = defaultdict(lambda: {"regular": 0, "contract": 0, "present": 0, "absent": 0})
@@ -2393,6 +2416,8 @@ class ModernMainFrame:
                 regular_absent = regular.get("absent", 0)
                 contract_present = contract.get("present", 0)
                 contract_absent = contract.get("absent", 0)
+                overtime_count = overtime_by_report.get(report.id, 0)
+                total_attendance = regular_present + contract_present + overtime_count
                 notes = self._build_attendance_notes(regular.get("reason", ""), contract.get("reason", ""))
                 author_name = report.author.username if report.author else ""
 
@@ -2409,6 +2434,8 @@ class ModernMainFrame:
                         regular_absent,
                         contract_present,
                         contract_absent,
+                        overtime_count,
+                        total_attendance,
                         notes,
                         self._format_last_modified_display(report),
                     ),
@@ -2634,6 +2661,8 @@ class ModernMainFrame:
         self.summary_bar_canvas = None
 
     def _render_summary_charts(self, data):
+        if not getattr(self, "summary_pie_frame", None) or not getattr(self, "summary_bar_frame", None):
+            return
         self._clear_summary_charts()
         if not data:
             empty_text = self._t("common.emptyData", "查無資料")
@@ -4041,35 +4070,34 @@ class ModernMainFrame:
         if hasattr(self, "delay_tree"):
             self._clear_tree(self.delay_tree)
         self.delay_pending_records = []
+        self._delay_pending_seq = 0
+
+    def _ensure_delay_pending_ids(self):
+        if not self.delay_pending_records:
+            return
+        max_id = 0
+        for rec in self.delay_pending_records:
+            pid = rec.get("_pending_id")
+            if isinstance(pid, int) and pid > max_id:
+                max_id = pid
+        if max_id > self._delay_pending_seq:
+            self._delay_pending_seq = max_id
+        for rec in self.delay_pending_records:
+            if not isinstance(rec.get("_pending_id"), int):
+                self._delay_pending_seq += 1
+                rec["_pending_id"] = self._delay_pending_seq
+
+    def _find_delay_pending_record(self, pending_id):
+        for rec in self.delay_pending_records:
+            if rec.get("_pending_id") == pending_id:
+                return rec
+        return None
 
     def _delete_selected_delay_pending(self):
-        if not self.delay_pending_records:
-            messagebox.showinfo(self._t("common.info", "資訊"), self._t("common.emptyData", "查無資料"))
-            return
-        selections = self.delay_tree.selection()
-        if not selections:
-            messagebox.showinfo(self._t("common.info", "資訊"), self._t("common.selectRow", "請先選擇一列"))
-            return
-        indices = []
-        for item in selections:
-            values = self.delay_tree.item(item, "values")
-            if not values:
-                continue
-            row_id = values[0]
-            if isinstance(row_id, str) and row_id.startswith("P"):
-                try:
-                    indices.append(int(row_id[1:]))
-                except ValueError:
-                    continue
-        if not indices:
-            messagebox.showinfo(self._t("common.info", "資訊"), self._t("common.selectRow", "請先選擇一列"))
-            return
-        for idx in sorted(set(indices), reverse=True):
-            if 0 <= idx < len(self.delay_pending_records):
-                del self.delay_pending_records[idx]
-        self._load_delay_entries()
+        self._delete_selected_delay_rows()
 
     def _clear_summary_view(self):
+
         if hasattr(self, "summary_tree"):
             self._clear_tree(self.summary_tree)
         self.summary_pending_records = []
@@ -4126,6 +4154,8 @@ class ModernMainFrame:
 
     def _configure_summary_tags(self):
         if not hasattr(self, "summary_tree"):
+            return
+        if not self.summary_tree.winfo_exists():
             return
         if self.theme_mode == "dark":
             red = "#FF6B6B"
@@ -4235,36 +4265,42 @@ class ModernMainFrame:
             try:
                 parsed_value = datetime.strptime(new_value, "%Y-%m-%d").date()
             except Exception:
-                messagebox.showerror(self._t("common.error", "??"), self._t("errors.invalidDateFormat", "?????????? YYYY-MM-DD"))
+                messagebox.showerror(
+                    self._t("common.error", "??"),
+                    self._t("errors.invalidDateFormat", "?????? YYYY-MM-DD"),
+                )
                 return
         values = list(self.delay_tree.item(row_id, "values"))
-        values[col_index] = parsed_value
         is_pending = isinstance(values[0], str) and str(values[0]).startswith("P")
         if is_pending:
             try:
-                idx = int(str(values[0])[1:])
+                pending_id = int(str(values[0])[1:])
             except ValueError:
-                self._end_delay_cell_edit()
+                messagebox.showerror(self._t("common.error", "??"), self._t("common.selectRow", "??????"))
                 return
-            if 0 <= idx < len(self.delay_pending_records):
-                self.delay_pending_records[idx][field_name] = parsed_value if field_name == "delay_date" else str(parsed_value)
-            self.delay_tree.item(row_id, values=values)
-            self._end_delay_cell_edit()
-            return
-        try:
-            with SessionLocal() as db:
-                row = db.query(DelayEntry).filter(DelayEntry.id == values[0]).first()
-                if not row:
-                    raise ValueError(self._t("common.selectRow", "??????"))
-                setattr(row, field_name, parsed_value if field_name == "delay_date" else str(parsed_value))
-                db.commit()
-        except Exception as exc:
-            messagebox.showerror(self._t("common.error", "??"), f"{exc}")
-            return
-        self.delay_tree.item(row_id, values=values)
+            rec = self._find_delay_pending_record(pending_id)
+            if not rec:
+                messagebox.showerror(self._t("common.error", "??"), self._t("common.selectRow", "??????"))
+                return
+            rec[field_name] = parsed_value
+            self._load_delay_entries()
+        else:
+            try:
+                with SessionLocal() as db:
+                    row = db.query(DelayEntry).filter(DelayEntry.id == values[0]).first()
+                    if not row:
+                        messagebox.showerror(self._t("common.error", "??"), self._t("common.selectRow", "??????"))
+                        return
+                    setattr(row, field_name, parsed_value)
+                    db.commit()
+            except Exception as exc:
+                messagebox.showerror(self._t("common.error", "??"), f"{exc}")
+                return
+            self._load_delay_entries()
         self._end_delay_cell_edit()
 
     def _show_delay_context_menu(self, event):
+
         row_id = self.delay_tree.identify_row(event.y)
         if row_id and row_id not in self.delay_tree.selection():
             self.delay_tree.selection_set(row_id)
@@ -4287,47 +4323,17 @@ class ModernMainFrame:
             menu.grab_release()
 
     def _delete_selected_delay_rows(self):
-        selections = self.delay_tree.selection()
-        if not selections:
-            messagebox.showinfo(self._t("common.info", "資訊"), self._t("common.selectRow", "請先選擇資料"))
+        if not hasattr(self, "delay_tree"):
             return
-        pending_indices = []
-        db_ids = []
-        for item in selections:
-            values = self.delay_tree.item(item, "values")
-            if not values:
-                continue
-            row_id = values[0]
-            if isinstance(row_id, str) and row_id.startswith("P"):
-                try:
-                    pending_indices.append(int(row_id[1:]))
-                except ValueError:
-                    continue
-            else:
-                db_ids.append(row_id)
-        for idx in sorted(set(pending_indices), reverse=True):
-            if 0 <= idx < len(self.delay_pending_records):
-                del self.delay_pending_records[idx]
-        if db_ids:
-            try:
-                with SessionLocal() as db:
-                    db.query(DelayEntry).filter(DelayEntry.id.in_(db_ids)).delete(synchronize_session=False)
-                    db.commit()
-            except Exception as exc:
-                messagebox.showerror(self._t("common.error", "錯誤"), f"{exc}")
-                return
-        self._load_delay_entries()
-
-    def _delete_selected_summary_rows(self):
-        selections = self.summary_tree.selection()
+        selections = self.delay_tree.selection()
         if not selections:
             messagebox.showinfo(self._t("common.info", "??"), self._t("common.selectRow", "??????"))
             return
-        self._ensure_summary_pending_ids()
+        self._ensure_delay_pending_ids()
         pending_ids = set()
         db_ids = []
         for item in selections:
-            values = self.summary_tree.item(item, "values")
+            values = self.delay_tree.item(item, "values")
             if not values:
                 continue
             row_id = values[0]
@@ -4339,22 +4345,24 @@ class ModernMainFrame:
             else:
                 db_ids.append(row_id)
         if pending_ids:
-            self.summary_pending_records = [
-                rec for rec in self.summary_pending_records if rec.get("_pending_id") not in pending_ids
+            self.delay_pending_records = [
+                rec for rec in self.delay_pending_records if rec.get("_pending_id") not in pending_ids
             ]
         if db_ids:
             try:
                 with SessionLocal() as db:
-                    db.query(SummaryActualEntry).filter(SummaryActualEntry.id.in_(db_ids)).delete(synchronize_session=False)
+                    db.query(DelayEntry).filter(DelayEntry.id.in_(db_ids)).delete(synchronize_session=False)
                     db.commit()
             except Exception as exc:
                 messagebox.showerror(self._t("common.error", "??"), f"{exc}")
                 return
-        self._load_summary_actual()
+        self._load_delay_entries()
 
     def _render_delay_rows(self, rows, pending=False):
+
         self._clear_tree(self.delay_tree)
         if pending:
+            self._ensure_delay_pending_ids()
             def sort_key(row):
                 raw_date = row.get("delay_date")
                 if isinstance(raw_date, str):
@@ -4373,7 +4381,7 @@ class ModernMainFrame:
             rows = sorted(rows, key=sort_key)
         for idx, row in enumerate(rows):
             if pending:
-                row_id = f"P{idx}"
+                row_id = f"P{row.get('_pending_id', idx)}"
                 values = (
                     row_id,
                     row["delay_date"],
@@ -4540,7 +4548,9 @@ class ModernMainFrame:
             return
 
         self.delay_pending_records = records
-        self._render_delay_rows(records, pending=True)
+        self._delay_pending_seq = 0
+        self._ensure_delay_pending_ids()
+        self._render_delay_rows(self.delay_pending_records, pending=True)
         messagebox.showinfo(
             self._t("common.info", "資訊"),
             self._t("delay.importPending", "匯入完成，請確認後再點上傳"),
@@ -4556,7 +4566,8 @@ class ModernMainFrame:
                 if unique_dates:
                     db.query(DelayEntry).filter(DelayEntry.delay_date.in_(unique_dates)).delete(synchronize_session=False)
                 for rec in self.delay_pending_records:
-                    db.add(DelayEntry(**rec))
+                    payload = {k: v for k, v in rec.items() if not k.startswith('_')}
+                    db.add(DelayEntry(**payload))
                 db.commit()
             self.delay_pending_records = []
             self._load_delay_entries()
@@ -5053,7 +5064,8 @@ class ModernMainFrame:
                         synchronize_session=False
                     )
                 for rec in self.summary_pending_records:
-                    db.add(SummaryActualEntry(**rec))
+                    payload = {k: v for k, v in rec.items() if not k.startswith('_')}
+                    db.add(SummaryActualEntry(**payload))
                 db.commit()
             self.summary_pending_records = []
             self._summary_pending_seq = 0

@@ -2,5 +2,5 @@
   "auto_backup": true,
   "backup_interval_days": 365,
   "theme": "light",
-  "database_path": "/home/pigo/文件/python/handover_system/data/handover_system1.db"
+  "database_path": "Z:/☆Junior Supervisor日報/handover_app/data/handover_system.db"
 }

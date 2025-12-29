@@ -22,7 +22,7 @@ def main():
     """メイン関数"""
     # 創建主視窗
     root = tk.Tk()
-    root.title("電子引き継ぎシステム V 0.1.2 - モダンUI")
+    root.title("電子引き継ぎシステム V 0.1.4 - モダンUI")
     root.geometry("1300x800")
     
     # 設置窗口圖示（如果有）

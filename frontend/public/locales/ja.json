@@ -5,7 +5,7 @@
     "login": "ログイン",
     "logout": "ログアウト",
     "subtitle": "引き継ぎ管理システム",
-    "version": "????? 0.1.2"
+    "version": "????? 0.1.4"
   },
   "navigation": {
     "home": "ホーム",
@@ -248,7 +248,9 @@
     "rateAxis": "出勤率 (%)",
     "rateSeries": "出勤率",
     "countChartTitle": "出勤人数",
-    "countAxis": "出勤人数"
+    "countAxis": "出勤人数",
+    "overtimeCount": "残業人数",
+    "totalAttendance": "出勤総人数"
   },
   "abnormalHistory": {
     "startDate": "開始日",

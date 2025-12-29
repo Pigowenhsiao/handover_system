@@ -338,10 +338,9 @@ class AttendanceSectionOptimized:
         absent_label.grid(row=2, column=0, sticky="w", padx=(0, 10), pady=(0, 10))
         
         absent_var = tk.StringVar(value="0")
-        absent_entry = ttk.Entry(parent, textvariable=absent_var, width=12, justify="right")
+        absent_entry = ttk.Entry(parent, textvariable=absent_var, width=12, justify="right", state="readonly")
         absent_entry.grid(row=2, column=1, sticky="w", pady=(0, 10))
-        absent_entry.bind("<KeyRelease>", lambda e: self.on_data_change(staff_type))
-        absent_entry.bind("<KeyRelease>", lambda e: self.calculate_rates(), add="+")
+        # 缺勤由系統自動計算，避免手動輸入
         
         # 出勤率指示器
         rate_frame = ttk.Frame(parent)
@@ -398,6 +397,8 @@ class AttendanceSectionOptimized:
             "absent": absent_label,
             "reason": reason_label,
             "rate": rate_title_label,
+            "absent_var": absent_var,
+            "absent_entry": absent_entry,
         }
     
     def setup_statistics_section(self):
@@ -495,44 +496,55 @@ class AttendanceSectionOptimized:
         self.update_status_indicator()
     
     def update_status_indicator(self):
-        """更新狀態指示器"""
+        """???????"""
         if self.data_modified:
             colors = self._get_theme_colors()
             self.status_label.config(
-                text=self.lang_manager.get_text("attendance.unsaved", "⚠️ 未儲存"),
-                foreground=colors.get("warning", "#ff9800")
+                text=self.lang_manager.get_text("attendance.unsaved", "?? ???"),
+                foreground=colors.get("warning", "#ff9800"),
             )
         else:
             self.status_label.config(text="")
-    
+
+    def _update_absent_display(self, staff_type, scheduled, present):
+        labels = self.staff_labels.get(staff_type, {})
+        absent_var = labels.get("absent_var")
+        absent_label = labels.get("absent")
+        if absent_var is None or absent_label is None:
+            return 0
+        absent = scheduled - present
+        absent_var.set(str(absent))
+        colors = self._get_theme_colors()
+        normal_color = colors.get("text_primary", "#212121")
+        danger_color = colors.get("error", "#F44336")
+        absent_label.config(foreground=danger_color if absent < 0 else normal_color)
+        return absent
+
     def calculate_rates(self):
-        """計算出勤率"""
+        """?????"""
         try:
-            # 計算正社員出勤率
             regular_scheduled = int(self.regular_scheduled_var.get() or 0)
             regular_present = int(self.regular_present_var.get() or 0)
             regular_rate = (regular_present / regular_scheduled * 100) if regular_scheduled > 0 else 0
-            
-            # 計算契約社員出勤率
+            self._update_absent_display("regular", regular_scheduled, regular_present)
+
             contractor_scheduled = int(self.contractor_scheduled_var.get() or 0)
             contractor_present = int(self.contractor_present_var.get() or 0)
             contractor_rate = (contractor_present / contractor_scheduled * 100) if contractor_scheduled > 0 else 0
-            
-            # 更新顯示
+            self._update_absent_display("contractor", contractor_scheduled, contractor_present)
+
             self.regular_rate_label.config(text=f"{regular_rate:.1f}%")
             self.contractor_rate_label.config(text=f"{contractor_rate:.1f}%")
-            
-            # 更新顏色和狀態指示燈
+
             self.update_rate_display("regular", regular_rate)
             self.update_rate_display("contractor", contractor_rate)
-            
-            # 更新總計
+
             self.update_totals(regular_scheduled, regular_present, contractor_scheduled, contractor_present)
-            
         except (ValueError, ZeroDivisionError):
             pass
 
     def _get_overtime_category_labels(self):
+
         return {
             "Regular": self.lang_manager.get_text("attendance.overtime_regular", "正社員"),
             "Contract": self.lang_manager.get_text("attendance.overtime_contract", "契約社員"),

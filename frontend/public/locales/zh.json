@@ -5,7 +5,7 @@
     "login": "登入",
     "logout": "登出",
     "subtitle": "交接管理系統",
-    "version": "?? 0.1.2"
+    "version": "?? 0.1.4"
   },
   "navigation": {
     "home": "首頁",
@@ -248,7 +248,9 @@
     "rateAxis": "出勤率 (%)",
     "rateSeries": "出勤率",
     "countChartTitle": "出勤人數",
-    "countAxis": "出勤人數"
+    "countAxis": "出勤人數",
+    "overtimeCount": "加班人數",
+    "totalAttendance": "出勤總人數"
   },
   "abnormalHistory": {
     "startDate": "統計開始日期",
