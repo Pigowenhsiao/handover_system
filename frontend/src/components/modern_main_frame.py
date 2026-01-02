@@ -1410,6 +1410,14 @@ class ModernMainFrame:
         ttk.Entry(form_frame, textvariable=self.impact_qty_var, style='Modern.TEntry').grid(
             row=1, column=1, sticky='ew', padx=self.layout["field_gap"], pady=self.layout["row_pad"]
         )
+
+        impact_hours_label = ttk.Label(form_frame, font=('Segoe UI', 10))
+        self._register_text(impact_hours_label, "equipment.impactHours", "Impact Hours:", scope="page")
+        impact_hours_label.grid(row=1, column=2, sticky='w', pady=self.layout["row_pad"])
+        self.impact_hours_var = tk.StringVar(value='0')
+        ttk.Entry(form_frame, textvariable=self.impact_hours_var, style='Modern.TEntry').grid(
+            row=1, column=3, sticky='ew', padx=self.layout["field_gap"], pady=self.layout["row_pad"])
+
         
         # 異常內容
         desc_label = ttk.Label(form_frame, font=('Segoe UI', 10))
@@ -1713,6 +1721,7 @@ class ModernMainFrame:
             "equip_description",
             "equip_start_time",
             "equip_impact_qty",
+            "equip_impact_hours",
             "equip_action",
             "equip_image",
             "lot_id",
@@ -1732,6 +1741,7 @@ class ModernMainFrame:
             ("summaryQuery.equipmentDescription", "設備異常內容"),
             ("equipment.startTime", "發生時刻"),
             ("equipment.impactQty", "影響數量"),
+            ("equipment.impactHours", "Impact Hours"),
             ("equipment.actionTaken", "對應內容"),
             ("common.image", "異常圖片"),
             ("lot.lotId", "批號"),
@@ -1841,6 +1851,7 @@ class ModernMainFrame:
             "description",
             "start_time",
             "impact_qty",
+            "impact_hours",
             "action_taken",
             "image_path",
         )
@@ -1854,6 +1865,7 @@ class ModernMainFrame:
             ("common.description", "異常內容"),
             ("equipment.startTime", "發生時刻"),
             ("equipment.impactQty", "影響數量"),
+            ("equipment.impactHours", "Impact Hours"),
             ("equipment.actionTaken", "對應內容"),
             ("common.image", "異常圖片"),
         ]
@@ -2027,6 +2039,103 @@ class ModernMainFrame:
                 anchor=anchors.get(col, "center"),
             )
 
+
+    def _build_attendance_notes(self, regular_reason, contract_reason):
+        parts = []
+        regular_label = self._t("attendance.regular_short", "Regular")
+        contract_label = self._t("attendance.contractor_short", "Contract")
+        if regular_reason:
+            parts.append(f"{regular_label}: {regular_reason}")
+        if contract_reason:
+            parts.append(f"{contract_label}: {contract_reason}")
+        return " / ".join(parts)
+
+    def _format_last_modified_display(self, report):
+        if not report.last_modified_at:
+            return ""
+        timestamp = report.last_modified_at.strftime("%Y-%m-%d %H:%M")
+        if report.last_modified_by:
+            return f"{report.last_modified_by} @ {timestamp}"
+        return timestamp
+
+    def _start_summary_dash_cell_edit(self, event):
+        if not hasattr(self, "summary_dash_tree"):
+            return
+        row_id = self.summary_dash_tree.identify_row(event.y)
+        col_id = self.summary_dash_tree.identify_column(event.x)
+        if not row_id or not col_id:
+            return
+        col_index = int(col_id.replace("#", "")) - 1
+        if col_index < 0:
+            return
+        col_name = self.summary_dash_columns[col_index]
+        if col_name not in ("date", "shift", "area"):
+            return
+        values = list(self.summary_dash_tree.item(row_id, "values"))
+        if col_index >= len(values):
+            return
+        bbox = self.summary_dash_tree.bbox(row_id, col_id)
+        if not bbox:
+            return
+        x, y, width, height = bbox
+        self._end_summary_dash_cell_edit()
+        self._summary_dash_edit_target = (row_id, col_index)
+        self._summary_dash_edit_var = tk.StringVar(value=str(values[col_index]))
+
+        if col_name == "shift":
+            self._load_shift_area_options()
+            shift_values = self._build_shift_display_options()
+            entry = ttk.Combobox(
+                self.summary_dash_tree,
+                textvariable=self._summary_dash_edit_var,
+                values=shift_values,
+                state="readonly",
+            )
+            entry.bind("<<ComboboxSelected>>", self._commit_summary_dash_cell_edit)
+        elif col_name == "area":
+            self._load_shift_area_options()
+            entry = ttk.Combobox(
+                self.summary_dash_tree,
+                textvariable=self._summary_dash_edit_var,
+                values=self.area_options,
+                state="readonly",
+            )
+            entry.bind("<<ComboboxSelected>>", self._commit_summary_dash_cell_edit)
+        else:
+            entry = ttk.Entry(self.summary_dash_tree, textvariable=self._summary_dash_edit_var)
+            entry.bind("<Return>", self._commit_summary_dash_cell_edit)
+            entry.bind("<Escape>", self._cancel_summary_dash_cell_edit)
+            entry.bind("<FocusOut>", self._commit_summary_dash_cell_edit)
+
+        entry.place(x=x, y=y, width=width, height=height)
+        entry.focus_set()
+        entry.bind("<Return>", self._commit_summary_dash_cell_edit)
+        entry.bind("<Escape>", self._cancel_summary_dash_cell_edit)
+        entry.bind("<FocusOut>", self._commit_summary_dash_cell_edit)
+        self._summary_dash_edit_entry = entry
+
+    def _end_summary_dash_cell_edit(self):
+        entry = getattr(self, "_summary_dash_edit_entry", None)
+        if entry is not None and entry.winfo_exists():
+            entry.destroy()
+        self._summary_dash_edit_entry = None
+        self._summary_dash_edit_target = None
+        self._summary_dash_edit_var = None
+
+    def _cancel_summary_dash_cell_edit(self, _event=None):
+        self._end_summary_dash_cell_edit()
+
+    def _commit_summary_dash_cell_edit(self, _event=None):
+        if not getattr(self, "_summary_dash_edit_target", None):
+            return
+        row_id, col_index = self._summary_dash_edit_target
+        new_value = self._summary_dash_edit_var.get().strip() if self._summary_dash_edit_var else ""
+        values = list(self.summary_dash_tree.item(row_id, "values"))
+        if col_index < len(values):
+            values[col_index] = new_value
+            self.summary_dash_tree.item(row_id, values=values)
+        self._end_summary_dash_cell_edit()
+
     def _update_abnormal_history_headers(self):
         if hasattr(self, "abnormal_equipment_tree") and self.abnormal_equipment_tree.winfo_exists():
             for col, (key, default) in zip(self.abnormal_equipment_columns, self.abnormal_equipment_header_keys):
@@ -2040,6 +2149,7 @@ class ModernMainFrame:
                 "description": 200,
                 "start_time": 100,
                 "impact_qty": 80,
+                "impact_hours": 90,
                 "action_taken": 180,
                 "image_path": 160,
             }
@@ -2144,6 +2254,7 @@ class ModernMainFrame:
                 description,
                 start_time,
                 impact_qty,
+                impact_hours,
                 action_taken,
                 image_path,
             ) = values
@@ -2152,6 +2263,7 @@ class ModernMainFrame:
                 ("description", self._t("summaryQuery.equipmentDescription", "Equipment Description"), description),
                 ("start_time", self._t("equipment.startTime", "Start Time"), start_time),
                 ("impact_qty", self._t("equipment.impactQty", "Impact Qty"), impact_qty),
+                ("impact_hours", self._t("equipment.impactHours", "Impact Hours"), impact_hours),
                 ("action_taken", self._t("equipment.actionTaken", "Action Taken"), action_taken),
                 ("image_path", self._t("common.image", "Image"), image_path),
             ]
@@ -2197,6 +2309,8 @@ class ModernMainFrame:
                         log.start_time = vars_map["start_time"].get().strip()
                         impact_raw = vars_map["impact_qty"].get().strip()
                         log.impact_qty = int(impact_raw) if impact_raw else 0
+                        hours_raw = vars_map["impact_hours"].get().strip()
+                        log.impact_hours = float(hours_raw) if hours_raw else 0.0
                         log.action_taken = vars_map["action_taken"].get().strip()
                         log.image_path = vars_map["image_path"].get().strip()
                     else:
@@ -2218,160 +2332,6 @@ class ModernMainFrame:
         save_btn = ttk.Button(dlg, style="Primary.TButton", command=save)
         self._register_text(save_btn, "common.save", "Save", scope="page")
         save_btn.grid(row=len(fields), column=0, columnspan=2, pady=10)
-
-    def _build_attendance_notes(self, regular_reason, contract_reason):
-        parts = []
-        regular_label = self._t("attendance.regular_short", "正職")
-        contract_label = self._t("attendance.contractor_short", "契約")
-        if regular_reason:
-            parts.append(f"{regular_label}: {regular_reason}")
-        if contract_reason:
-            parts.append(f"{contract_label}: {contract_reason}")
-        return " / ".join(parts)
-
-    def _format_last_modified_display(self, report):
-        if not report.last_modified_at:
-            return ""
-        timestamp = report.last_modified_at.strftime("%Y-%m-%d %H:%M")
-        if report.last_modified_by:
-            return f"{report.last_modified_by} @ {timestamp}"
-        return timestamp
-
-    def _start_summary_dash_cell_edit(self, event):
-        if not hasattr(self, "summary_dash_tree"):
-            return
-        row_id = self.summary_dash_tree.identify_row(event.y)
-        col_id = self.summary_dash_tree.identify_column(event.x)
-        if not row_id or not col_id:
-            return
-        col_index = int(col_id.replace("#", "")) - 1
-        if col_index < 0:
-            return
-        col_name = self.summary_dash_columns[col_index]
-        if col_name not in ("date", "shift", "area"):
-            return
-        values = list(self.summary_dash_tree.item(row_id, "values"))
-        if col_index >= len(values):
-            return
-        bbox = self.summary_dash_tree.bbox(row_id, col_id)
-        if not bbox:
-            return
-        x, y, width, height = bbox
-        self._end_summary_dash_cell_edit()
-        self._summary_dash_edit_target = (row_id, col_index)
-        self._summary_dash_edit_var = tk.StringVar(value=str(values[col_index]))
-
-        if col_name == "shift":
-            self._load_shift_area_options()
-            shift_values = self._build_shift_display_options()
-            entry = ttk.Combobox(
-                self.summary_dash_tree,
-                textvariable=self._summary_dash_edit_var,
-                values=shift_values,
-                state="readonly",
-            )
-            entry.bind("<<ComboboxSelected>>", self._commit_summary_dash_cell_edit)
-        elif col_name == "area":
-            self._load_shift_area_options()
-            entry = ttk.Combobox(
-                self.summary_dash_tree,
-                textvariable=self._summary_dash_edit_var,
-                values=self.area_options,
-                state="readonly",
-            )
-            entry.bind("<<ComboboxSelected>>", self._commit_summary_dash_cell_edit)
-        else:
-            entry = ttk.Entry(self.summary_dash_tree, textvariable=self._summary_dash_edit_var)
-            entry.bind("<Return>", self._commit_summary_dash_cell_edit)
-            entry.bind("<Escape>", self._cancel_summary_dash_cell_edit)
-            entry.bind("<FocusOut>", self._commit_summary_dash_cell_edit)
-
-        entry.place(x=x, y=y, width=width, height=height)
-        entry.focus_set()
-        entry.bind("<Return>", self._commit_summary_dash_cell_edit)
-        entry.bind("<Escape>", self._cancel_summary_dash_cell_edit)
-        entry.bind("<FocusOut>", self._commit_summary_dash_cell_edit)
-        self._summary_dash_edit_entry = entry
-
-    def _end_summary_dash_cell_edit(self):
-        entry = getattr(self, "_summary_dash_edit_entry", None)
-        if entry is not None and entry.winfo_exists():
-            entry.destroy()
-        self._summary_dash_edit_entry = None
-        self._summary_dash_edit_target = None
-        self._summary_dash_edit_var = None
-
-    def _cancel_summary_dash_cell_edit(self, _event=None):
-        self._end_summary_dash_cell_edit()
-
-    def _commit_summary_dash_cell_edit(self, _event=None):
-        if not getattr(self, "_summary_dash_edit_target", None):
-            return
-        row_id, col_index = self._summary_dash_edit_target
-        new_value = self._summary_dash_edit_var.get().strip() if self._summary_dash_edit_var else ""
-        values = list(self.summary_dash_tree.item(row_id, "values"))
-        if col_index < len(values):
-            values[col_index] = new_value
-            self.summary_dash_tree.item(row_id, values=values)
-        self._end_summary_dash_cell_edit()
-
-    def _show_summary_dash_context_menu(self, event):
-        row_id = self.summary_dash_tree.identify_row(event.y)
-        if row_id and row_id not in self.summary_dash_tree.selection():
-            self.summary_dash_tree.selection_set(row_id)
-        menu = tk.Menu(self.summary_dash_tree, tearoff=0)
-        menu.add_command(
-            label=self._t("common.delete", "刪除"),
-            command=self._hide_selected_summary_dash_rows,
-        )
-        try:
-            menu.tk_popup(event.x_root, event.y_root)
-        finally:
-            menu.grab_release()
-
-    def _hide_selected_summary_dash_rows(self):
-        selections = self.summary_dash_tree.selection()
-        if not selections:
-            messagebox.showinfo(
-                self._t("common.info", "資訊"),
-                self._t("common.selectRow", "請先選擇資料"),
-            )
-            return
-        confirm = messagebox.askyesno(
-            self._t("common.confirm", "確認"),
-            self._t("summaryDashboard.confirmDelete", "確定要標示為不顯示嗎？"),
-        )
-        if not confirm:
-            return
-        user_name = ""
-        if self.current_user:
-            user_name = self.current_user.get("username", "") or ""
-        try:
-            with SessionLocal() as db:
-                for item_id in selections:
-                    try:
-                        report_id = int(item_id)
-                    except ValueError:
-                        continue
-                    values = list(self.summary_dash_tree.item(item_id, "values"))
-                    snapshot = dict(zip(self.summary_dash_columns, values))
-                    row = db.query(DailyReport).filter(DailyReport.id == report_id).first()
-                    if not row:
-                        continue
-                    row.is_hidden = 1
-                    row.last_modified_by = user_name
-                    row.last_modified_at = datetime.now()
-                    db.add(
-                        AttendanceSummaryDeleteLog(
-                            report_id=report_id,
-                            deleted_by=user_name,
-                            snapshot_json=json.dumps(snapshot, ensure_ascii=False),
-                        )
-                    )
-                db.commit()
-            self._load_summary_dashboard()
-        except Exception as exc:
-            messagebox.showerror(self._t("common.error", "錯誤"), f"{exc}")
 
     def _update_summary_dash_rows(self):
         if not hasattr(self, "summary_dash_tree"):
@@ -2729,6 +2689,7 @@ class ModernMainFrame:
                         row.description,
                         row.start_time,
                         row.impact_qty,
+                        row.impact_hours,
                         row.action_taken,
                         row.image_path or "",
                     ),
@@ -3719,8 +3680,16 @@ class ModernMainFrame:
             impact_qty = int(self.impact_qty_var.get() or 0)
         except ValueError:
             messagebox.showerror(
-                self._t("common.error", "錯誤"),
-                self._t("equipment.invalidImpactQty", "影響數量需為數字")
+                self._t("common.error", "??"),
+                self._t("equipment.invalidImpactQty", "????????"),
+            )
+            return
+        try:
+            impact_hours = float(self.impact_hours_var.get() or 0)
+        except ValueError:
+            messagebox.showerror(
+                self._t("common.error", "??"),
+                self._t("equipment.invalidImpactHours", "????????"),
             )
             return
         try:
@@ -3731,6 +3700,7 @@ class ModernMainFrame:
                     description=description,
                     start_time=start_time,
                     impact_qty=impact_qty,
+                    impact_hours=impact_hours,
                     action_taken=action_taken,
                     image_path=image_path or None,
                 )
@@ -3740,6 +3710,7 @@ class ModernMainFrame:
             self.equip_id_var.set("")
             self.start_time_var.set("")
             self.impact_qty_var.set("0")
+            self.impact_hours_var.set("0")
             self.equip_desc_text.delete("1.0", "end")
             self.action_text.delete("1.0", "end")
             if hasattr(self, "image_path_var"):
@@ -3850,11 +3821,12 @@ class ModernMainFrame:
             tree.insert("", "end", values=row_builder(row))
 
     def _open_equipment_history_dialog(self, rows):
-        columns = ("equip_id", "start_time", "impact_qty", "description", "action_taken")
+        columns = ("equip_id", "start_time", "impact_qty", "impact_hours", "description", "action_taken")
         headers = [
             ("equipment.equipId", "設備號碼"),
             ("equipment.startTime", "發生時刻"),
             ("equipment.impactQty", "影響數量"),
+            ("equipment.impactHours", "Impact Hours"),
             ("common.description", "異常內容"),
             ("equipment.actionTaken", "對應內容"),
         ]
@@ -3867,6 +3839,7 @@ class ModernMainFrame:
                 row.equip_id,
                 row.start_time,
                 row.impact_qty,
+                row.impact_hours,
                 row.description,
                 row.action_taken,
             ),
@@ -4209,6 +4182,7 @@ class ModernMainFrame:
             "equip_description": 220,
             "equip_start_time": 110,
             "equip_impact_qty": 90,
+            "equip_impact_hours": 90,
             "equip_action": 200,
             "equip_image": 160,
             "lot_id": 110,
@@ -4221,6 +4195,7 @@ class ModernMainFrame:
             "shift",
             "area",
             "equip_impact_qty",
+            "equip_impact_hours",
         }
         for col, (key, default) in zip(self.summary_query_columns, self.summary_query_header_keys):
             self.summary_query_tree.heading(col, text=self._t(key, default))
@@ -4327,6 +4302,7 @@ class ModernMainFrame:
                     ("equip_description", self._t("summaryQuery.equipmentDescription", "Equipment Description"), row_data.get("equip_description", "")),
                     ("equip_start_time", self._t("equipment.startTime", "Start Time"), row_data.get("equip_start_time", "")),
                     ("equip_impact_qty", self._t("equipment.impactQty", "Impact Qty"), row_data.get("equip_impact_qty", "")),
+                    ("equip_impact_hours", self._t("equipment.impactHours", "Impact Hours"), row_data.get("equip_impact_hours", "")),
                     ("equip_action", self._t("equipment.actionTaken", "Action Taken"), row_data.get("equip_action", "")),
                     ("equip_image", self._t("common.image", "Image"), row_data.get("equip_image", "")),
                 ]
@@ -4367,6 +4343,8 @@ class ModernMainFrame:
                             log.start_time = vars_map["equip_start_time"].get().strip()
                             impact_raw = vars_map["equip_impact_qty"].get().strip()
                             log.impact_qty = int(impact_raw) if impact_raw else 0
+                            hours_raw = vars_map["equip_impact_hours"].get().strip()
+                            log.impact_hours = float(hours_raw) if hours_raw else 0.0
                             log.action_taken = vars_map["equip_action"].get().strip()
                             log.image_path = vars_map["equip_image"].get().strip()
                     elif meta["type"] == "lot":
@@ -4644,6 +4622,45 @@ class ModernMainFrame:
             menu.tk_popup(event.x_root, event.y_root)
         finally:
             menu.grab_release()
+
+
+    def _delete_selected_summary_rows(self):
+        if not hasattr(self, "summary_tree"):
+            return
+        selections = self.summary_tree.selection()
+        if not selections:
+            messagebox.showinfo(self._t("common.info", "Info"), self._t("common.selectRow", "Please select a row."))
+            return
+        self._ensure_summary_pending_ids()
+        pending_ids = set()
+        db_ids = []
+        for item in selections:
+            values = self.summary_tree.item(item, "values")
+            if not values:
+                continue
+            row_id = values[0]
+            if isinstance(row_id, str) and row_id.startswith("P"):
+                try:
+                    pending_ids.add(int(row_id[1:]))
+                except ValueError:
+                    continue
+            else:
+                db_ids.append(row_id)
+        if pending_ids:
+            self.summary_pending_records = [
+                rec for rec in self.summary_pending_records if rec.get("_pending_id") not in pending_ids
+            ]
+        if db_ids:
+            try:
+                with SessionLocal() as db:
+                    db.query(SummaryActualEntry).filter(SummaryActualEntry.id.in_(db_ids)).delete(
+                        synchronize_session=False
+                    )
+                    db.commit()
+            except Exception as exc:
+                messagebox.showerror(self._t("common.error", "Error"), f"{exc}")
+                return
+        self._load_summary_actual()
 
     def _delete_selected_delay_rows(self):
         if not hasattr(self, "delay_tree"):
@@ -5091,7 +5108,7 @@ class ModernMainFrame:
             for log in lot_rows:
                 lot_by_report[log.report_id].append(log)
 
-            equip_blanks = [""] * 6
+            equip_blanks = [""] * 7
             lot_blanks = [""] * 4
 
             for row in rows:
@@ -5113,6 +5130,7 @@ class ModernMainFrame:
                             normalize(log.description),
                             normalize(log.start_time),
                             "" if log.impact_qty is None else log.impact_qty,
+                            "" if log.impact_hours is None else log.impact_hours,
                             normalize(log.action_taken),
                             normalize(log.image_path),
                         ]

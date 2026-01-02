@@ -9,7 +9,7 @@ import sqlite3
 import time
 from typing import Dict, Generator, Optional
 
-from sqlalchemy import Column, Integer, String, Date, DateTime, Text, ForeignKey, create_engine, event
+from sqlalchemy import Column, Integer, String, Date, DateTime, Text, Float, ForeignKey, create_engine, event
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker, Session
 
@@ -244,6 +244,7 @@ class EquipmentLog(Base):
     description: str = Column(Text, default="", nullable=False)
     start_time: str = Column(String(50), default="", nullable=False)
     impact_qty: int = Column(Integer, default=0, nullable=False)
+    impact_hours: float = Column(Float, default=0.0, nullable=False)
     action_taken: str = Column(Text, default="", nullable=False)
     image_path: Optional[str] = Column(String(255), nullable=True)
 
@@ -325,6 +326,7 @@ def init_db(default_admin_username: str = "admin", default_admin_password: str =
         print(f"資料庫初始化失敗: {exc}")
         return
     _ensure_daily_report_columns()
+    _ensure_equipment_log_columns()
 
     from auth import hash_password  # local import to avoid circular dependency
 
@@ -373,3 +375,16 @@ def _ensure_daily_report_columns() -> None:
                 )
     except Exception as exc:
         print(f"資料庫欄位檢查失敗: {exc}")
+def _ensure_equipment_log_columns() -> None:
+    try:
+        with engine.begin() as conn:
+            rows = conn.exec_driver_sql("PRAGMA table_info(equipment_logs)").fetchall()
+            existing = {row[1] for row in rows}
+            if "impact_hours" not in existing:
+                conn.exec_driver_sql(
+                    "ALTER TABLE equipment_logs ADD COLUMN impact_hours REAL NOT NULL DEFAULT 0"
+                )
+    except Exception as exc:
+        print(f"Equipment log migration failed: {exc}")
+
+
