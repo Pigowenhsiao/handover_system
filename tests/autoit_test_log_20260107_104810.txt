@@ -1,0 +1,37 @@
+2026/01/07 10:48:10 | AutoIt UI test start
+2026/01/07 10:48:10 | Root: C:\Users\hsi67063\Documents\Handover_system
+2026/01/07 10:48:10 | STEP: launch app
+2026/01/07 10:48:10 | WAIT: main window
+2026/01/07 10:48:17 | INFO: main window title: TtkMonitorWindow
+2026/01/07 10:48:18 | STEP: login
+2026/01/07 10:48:21 | STEP: language toggle
+2026/01/07 10:48:23 | STEP: theme toggle
+2026/01/07 10:48:25 | STEP: sidebar toggle
+2026/01/07 10:48:26 | STEP: daily report inputs
+2026/01/07 10:48:33 | STEP: nav -> attendance
+2026/01/07 10:48:34 | STEP: attendance inputs
+2026/01/07 10:48:37 | STEP: nav -> equipment
+2026/01/07 10:48:38 | STEP: equipment inputs
+2026/01/07 10:48:44 | STEP: nav -> lot
+2026/01/07 10:48:46 | STEP: lot inputs
+2026/01/07 10:48:50 | STEP: nav -> summary
+2026/01/07 10:48:51 | STEP: summary dashboard
+2026/01/07 10:48:54 | STEP: nav -> summary_query
+2026/01/07 10:48:55 | STEP: summary query
+2026/01/07 10:48:57 | STEP: nav -> abnormal_history
+2026/01/07 10:48:58 | ERROR dialog: エラー |  [nav:abnormal_history]
+2026/01/07 10:48:59 | STEP: abnormal history
+2026/01/07 10:49:02 | STEP: nav -> delay_list
+2026/01/07 10:49:03 | ERROR dialog: エラー |  [nav:delay_list]
+2026/01/07 10:49:03 | STEP: delay list
+2026/01/07 10:49:09 | STEP: nav -> summary_actual
+2026/01/07 10:49:10 | ERROR dialog: 尚未設定日報表 |  [nav:summary_actual]
+2026/01/07 10:49:11 | STEP: summary actual
+2026/01/07 10:49:16 | STEP: nav -> admin
+2026/01/07 10:49:17 | STEP: admin user mgmt
+2026/01/07 10:49:25 | STEP: admin master data tab
+2026/01/07 10:49:34 | STEP: admin settings tab
+2026/01/07 10:49:39 | STEP: logout
+2026/01/07 10:49:40 | STEP: close app
+2026/01/07 10:49:41 | AutoIt UI test complete
+2026/01/07 10:49:41 | Error count: 3

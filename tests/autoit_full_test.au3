@@ -1,5 +1,6 @@
 ; AutoIt full UI test for handover system
 #include <Date.au3>
+#include <Misc.au3>
 
 Opt("WinTitleMatchMode", 4)
 Opt("WinDetectHiddenText", 1)
@@ -12,8 +13,10 @@ Global $LOG_PATH = ""
 Global $LOG_FILE = -1
 Global $APP_PID = 0
 Global $ERROR_COUNT = 0
-Global $MAIN_TITLE = "[REGEXPTITLE:.*V 0\.1\.5]"
+Global $ESC_CHECK_MS = 500
+Global $MAIN_TITLE = ""
 Global $MAIN_HWND = 0
+Global $IGNORE_TITLES = "TtkMonitorWindow"
 
 Func InitPaths()
     Local $pos = StringInStr(@ScriptDir, "\tests", 0, -1)
@@ -30,10 +33,28 @@ Func WriteLog($msg)
     FileWriteLine($LOG_FILE, _NowCalc() & " | " & $msg)
 EndFunc
 
+Func AbortIfEsc()
+    Local $timer = TimerInit()
+    While TimerDiff($timer) < $ESC_CHECK_MS
+        If _IsPressed("1B") Then
+            WriteLog("ABORT: ESC pressed")
+            If $LOG_FILE <> -1 Then FileClose($LOG_FILE)
+            Exit 1
+        EndIf
+        Sleep(50)
+    WEnd
+EndFunc
+
+Func SafeSend($keys)
+    AbortIfEsc()
+    Send($keys)
+EndFunc
+
 Func CloseDialogs($context, $allow)
     Local $list = WinList("[CLASS:#32770]")
     Local $count = 0
     For $i = 1 To $list[0][0]
+        AbortIfEsc()
         Local $hWnd = $list[$i][1]
         If $APP_PID <> 0 Then
             If WinGetProcess($hWnd) <> $APP_PID Then ContinueLoop
@@ -50,9 +71,9 @@ Func CloseDialogs($context, $allow)
         WinActivate($hWnd)
         Sleep(200)
         If $allow Then
-            Send("{ESC}")
+            SafeSend("{ESC}")
         Else
-            Send("{ENTER}")
+            SafeSend("{ENTER}")
         EndIf
         Sleep(300)
     Next
@@ -73,6 +94,7 @@ Func GetWinPos()
 EndFunc
 
 Func ClickAt($x, $y)
+    AbortIfEsc()
     MouseClick("left", $x, $y, 1, 0)
     Sleep(300)
 EndFunc
@@ -100,25 +122,41 @@ Func WaitForMainWindow($timeoutSec)
     WriteLog("WAIT: main window")
     Local $timer = TimerInit()
     While TimerDiff($timer) < ($timeoutSec * 1000)
-        Local $list = WinList("[CLASS:TkChild]")
-        Local $fallback = 0
+        AbortIfEsc()
+        Local $list = WinList()
+        Local $candidate = 0
+        Local $candidate_area = 0
         For $i = 1 To $list[0][0]
             Local $hWnd = $list[$i][1]
             Local $title = WinGetTitle($hWnd)
             If $title = "" Then ContinueLoop
             If $APP_PID <> 0 And WinGetProcess($hWnd) = $APP_PID Then
-                $MAIN_HWND = $hWnd
-                WriteLog("INFO: main window title: " & $title)
-                WinActivate($hWnd)
-                Sleep(500)
-                Return True
+                If StringInStr($IGNORE_TITLES, $title) Then
+                    ContinueLoop
+                EndIf
+                If StringInStr($title, "V 0.1.5") Then
+                    $MAIN_HWND = $hWnd
+                    $MAIN_TITLE = $title
+                    WriteLog("INFO: main window title: " & $title)
+                    WinActivate($hWnd)
+                    Sleep(500)
+                    Return True
+                EndIf
+                Local $pos = WinGetPos($hWnd)
+                If Not @error Then
+                    Local $area = $pos[2] * $pos[3]
+                    If $area > $candidate_area Then
+                        $candidate_area = $area
+                        $candidate = $hWnd
+                    EndIf
+                EndIf
             EndIf
-            If $fallback = 0 Then $fallback = $hWnd
         Next
-        If $fallback <> 0 And TimerDiff($timer) > 2000 Then
-            $MAIN_HWND = $fallback
-            WriteLog("WARN: main window matched by class only: " & WinGetTitle($fallback))
-            WinActivate($fallback)
+        If $candidate <> 0 Then
+            $MAIN_HWND = $candidate
+            $MAIN_TITLE = WinGetTitle($candidate)
+            WriteLog("WARN: main window fallback: " & $MAIN_TITLE)
+            WinActivate($candidate)
             Sleep(500)
             Return True
         EndIf
@@ -132,6 +170,7 @@ EndFunc
 Func LaunchApp()
     WriteLog("STEP: launch app")
     Local $cmd = "python handover_system.py"
+    AbortIfEsc()
     $APP_PID = Run($cmd, $ROOT_DIR, @SW_SHOW)
     If $APP_PID = 0 Then
         WriteLog("ERROR: failed to start app")
@@ -144,10 +183,28 @@ EndFunc
 Func DoLogin()
     WriteLog("STEP: login")
     ClickRel(0.50, 0.42)
-    Send("admin")
-    ClickRel(0.50, 0.48)
-    Send("admin123")
+    SafeSend("^a")
+    SafeSend("admin")
+    SafeSend("{TAB}")
+    Sleep(200)
+    SafeSend("admin123")
     ClickRel(0.50, 0.58)
+    WriteLog("PAUSE: wait 10s for login verification")
+    Sleep(10000)
+    If $MAIN_HWND <> 0 Then
+        Local $title = WinGetTitle($MAIN_HWND)
+        If StringInStr($IGNORE_TITLES, $title) Then
+            WriteLog("WARN: main hwnd is monitor window, re-detecting main window")
+            WaitForMainWindow(10)
+        EndIf
+    Else
+        WaitForMainWindow(10)
+    EndIf
+    If $MAIN_HWND <> 0 Then
+        AbortIfEsc()
+        WinSetState($MAIN_HWND, "", @SW_MAXIMIZE)
+        Sleep(600)
+    EndIf
     Sleep(1200)
     If Not ExpectNoDialogs("login") Then
         WriteLog("ERROR: login dialog appeared")
@@ -157,13 +214,13 @@ EndFunc
 Func TestLanguageToggle()
     WriteLog("STEP: language toggle")
     ClickRel(0.78, 0.06)
-    Send("{DOWN}{ENTER}")
+    SafeSend("{DOWN}{ENTER}")
     Sleep(500)
     ClickRel(0.78, 0.06)
-    Send("{DOWN}{ENTER}")
+    SafeSend("{DOWN}{ENTER}")
     Sleep(500)
     ClickRel(0.78, 0.06)
-    Send("{DOWN}{ENTER}")
+    SafeSend("{DOWN}{ENTER}")
     Sleep(500)
 EndFunc
 
@@ -186,21 +243,21 @@ EndFunc
 Func FillDailyReport()
     WriteLog("STEP: daily report inputs")
     ClickRel(0.32, 0.27)
-    Send("2025-01-15")
+    SafeSend("2025-01-15")
     ClickRel(0.32, 0.33)
-    Send("{F4}{DOWN}{ENTER}")
+    SafeSend("{F4}{DOWN}{ENTER}")
     ClickRel(0.32, 0.39)
-    Send("{F4}{DOWN}{ENTER}")
+    SafeSend("{F4}{DOWN}{ENTER}")
     ClickRel(0.28, 0.45)
     Sleep(600)
     ExpectNoDialogs("save_basic_info")
 
     ClickRel(0.50, 0.54)
-    Send("Key output test")
+    SafeSend("Key output test")
     ClickRel(0.50, 0.66)
-    Send("Key issues test")
+    SafeSend("Key issues test")
     ClickRel(0.50, 0.78)
-    Send("Countermeasures test")
+    SafeSend("Countermeasures test")
 
     ClickRel(0.42, 0.93)
     Sleep(800)
@@ -215,9 +272,9 @@ Func TestAttendance()
     ClickNav(1, "attendance")
     WriteLog("STEP: attendance inputs")
     ClickRel(0.35, 0.75)
-    Send("2")
+    SafeSend("2")
     ClickRel(0.65, 0.75)
-    Send("1")
+    SafeSend("1")
     ClickRel(0.25, 0.90)
     Sleep(600)
     ExpectNoDialogs("attendance_validate")
@@ -230,17 +287,17 @@ Func TestEquipment()
     ClickNav(2, "equipment")
     WriteLog("STEP: equipment inputs")
     ClickRel(0.30, 0.30)
-    Send("EQ-001")
+    SafeSend("EQ-001")
     ClickRel(0.68, 0.30)
-    Send("08:00")
+    SafeSend("08:00")
     ClickRel(0.30, 0.38)
-    Send("1")
+    SafeSend("1")
     ClickRel(0.68, 0.38)
-    Send("0.5")
+    SafeSend("0.5")
     ClickRel(0.50, 0.48)
-    Send("Equipment issue test")
+    SafeSend("Equipment issue test")
     ClickRel(0.50, 0.58)
-    Send("Action test")
+    SafeSend("Action test")
     ClickRel(0.80, 0.67)
     Sleep(800)
     AllowDialogs("equipment_browse")
@@ -256,13 +313,13 @@ Func TestLot()
     ClickNav(3, "lot")
     WriteLog("STEP: lot inputs")
     ClickRel(0.30, 0.30)
-    Send("LOT-001")
+    SafeSend("LOT-001")
     ClickRel(0.50, 0.40)
-    Send("Lot description test")
+    SafeSend("Lot description test")
     ClickRel(0.30, 0.50)
-    Send("Hold")
+    SafeSend("Hold")
     ClickRel(0.50, 0.60)
-    Send("Notes test")
+    SafeSend("Notes test")
     ClickRel(0.34, 0.72)
     Sleep(800)
     ExpectNoDialogs("lot_add")
@@ -289,9 +346,9 @@ Func TestSummaryQuery()
     Sleep(800)
     ExpectNoDialogs("summary_query_search")
     ClickRel(0.32, 0.36)
-    Send("{F4}{DOWN}{ENTER}")
+    SafeSend("{F4}{DOWN}{ENTER}")
     ClickRel(0.68, 0.36)
-    Send("{F4}{DOWN}{ENTER}")
+    SafeSend("{F4}{DOWN}{ENTER}")
     Sleep(500)
 EndFunc
 
@@ -302,9 +359,9 @@ Func TestAbnormalHistory()
     Sleep(800)
     ExpectNoDialogs("abnormal_search")
     ClickRel(0.32, 0.36)
-    Send("{F4}{DOWN}{ENTER}")
+    SafeSend("{F4}{DOWN}{ENTER}")
     ClickRel(0.68, 0.36)
-    Send("{F4}{DOWN}{ENTER}")
+    SafeSend("{F4}{DOWN}{ENTER}")
     Sleep(500)
 EndFunc
 
@@ -349,13 +406,13 @@ Func TestAdmin()
     ClickNav(9, "admin")
     WriteLog("STEP: admin user mgmt")
     ClickRel(0.35, 0.30)
-    Send("testuser")
+    SafeSend("testuser")
     ClickRel(0.62, 0.30)
-    Send("testuser@example.com")
+    SafeSend("testuser@example.com")
     ClickRel(0.35, 0.36)
-    Send("Test123!")
+    SafeSend("Test123!")
     ClickRel(0.62, 0.36)
-    Send("{F4}{DOWN}{ENTER}")
+    SafeSend("{F4}{DOWN}{ENTER}")
     ClickRel(0.36, 0.43)
     Sleep(800)
     ExpectNoDialogs("admin_create_user")
@@ -378,7 +435,7 @@ Func TestAdmin()
     ClickRel(0.55, 0.22)
     Sleep(800)
     ClickRel(0.30, 0.32)
-    Send("TestShift")
+    SafeSend("TestShift")
     ClickRel(0.36, 0.39)
     Sleep(600)
     ExpectNoDialogs("admin_add_shift")
@@ -392,7 +449,7 @@ Func TestAdmin()
     AllowDialogs("admin_delete_shift")
 
     ClickRel(0.70, 0.32)
-    Send("TestArea")
+    SafeSend("TestArea")
     ClickRel(0.70, 0.39)
     Sleep(600)
     ExpectNoDialogs("admin_add_area")
@@ -411,7 +468,7 @@ Func TestAdmin()
     ClickRel(0.30, 0.36)
     Sleep(400)
     ClickRel(0.52, 0.36)
-    Send("5")
+    SafeSend("5")
     ClickRel(0.70, 0.36)
     Sleep(800)
     ExpectNoDialogs("admin_save_settings")
@@ -427,7 +484,13 @@ Func FinishAndClose()
     AllowDialogs("logout")
 
     WriteLog("STEP: close app")
-    WinClose($MAIN_HWND)
+    If $MAIN_HWND <> 0 Then
+        AbortIfEsc()
+        WinClose($MAIN_HWND)
+    ElseIf $MAIN_TITLE <> "" Then
+        AbortIfEsc()
+        WinClose($MAIN_TITLE)
+    EndIf
     Sleep(800)
     AllowDialogs("close")
 EndFunc
