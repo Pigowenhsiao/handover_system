@@ -1,0 +1,6 @@
+2026/01/07 09:21:00 | AutoIt UI test start
+2026/01/07 09:21:00 | Root: C:\Users\hsi67063\Documents\Handover_system
+2026/01/07 09:21:00 | STEP: launch app
+2026/01/07 09:21:00 | WAIT: main window
+2026/01/07 09:21:40 | ERROR: main window not found
+2026/01/07 09:21:40 | ERROR: aborting due to launch failure

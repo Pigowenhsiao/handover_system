@@ -7,6 +7,9 @@ from PyInstaller.utils.hooks import collect_all
 spec_path = Path(globals().get("SPEC", sys.argv[0])).resolve()
 project_root = spec_path.parent
 
+
+
+
 matplotlib_datas, matplotlib_binaries, matplotlib_hidden = collect_all("matplotlib")
 pandas_datas, pandas_binaries, pandas_hidden = collect_all("pandas")
 openpyxl_datas, openpyxl_binaries, openpyxl_hidden = collect_all("openpyxl")
@@ -22,7 +25,18 @@ if settings_path.exists():
 
 datas += matplotlib_datas + pandas_datas + openpyxl_datas
 binaries = matplotlib_binaries + pandas_binaries + openpyxl_binaries
-hiddenimports = matplotlib_hidden + pandas_hidden + openpyxl_hidden
+extra_hiddenimports = [
+    "sqlalchemy",
+    "pandas",
+    "bcrypt",
+    "openpyxl",
+    "matplotlib",
+    "jwt",
+    "pydantic",
+]
+hiddenimports = list(
+    dict.fromkeys(matplotlib_hidden + pandas_hidden + openpyxl_hidden + extra_hiddenimports)
+)
 
 block_cipher = None
 
@@ -47,13 +61,13 @@ exe = EXE(
     [],
     exclude_binaries=True,
     name="HandoverSystem",
-    debug=False,
+    debug=True,
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=False,
+    console=True,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,

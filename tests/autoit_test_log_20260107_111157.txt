@@ -1,0 +1,13 @@
+2026/01/07 11:11:57 | AutoIt UI test start
+2026/01/07 11:11:57 | Root: C:\Users\hsi67063\Documents\Handover_system
+2026/01/07 11:11:57 | STEP: launch app
+2026/01/07 11:11:57 | WAIT: main window
+2026/01/07 11:12:09 | INFO: main window title: 電子交接系統 V 0.1.5
+2026/01/07 11:12:10 | STEP: login
+2026/01/07 11:12:14 | PAUSE: wait 10s for login verification
+2026/01/07 11:12:32 | STEP: language toggle
+2026/01/07 11:12:38 | STEP: theme toggle
+2026/01/07 11:12:41 | STEP: sidebar toggle
+2026/01/07 11:12:43 | STEP: daily report inputs
+2026/01/07 11:12:53 | ERROR dialog: エラー |  [save_basic_info]
+2026/01/07 11:12:59 | ABORT: ESC pressed

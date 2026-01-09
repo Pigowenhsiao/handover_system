@@ -9,5 +9,12 @@ dist/
 .specify/
 Removeable/
 git_token
+# Python 快取
+**/__pycache__/
+*.pyc
+
+# SQLite 暫存檔
+data/*.db-shm
+data/*.db-wal
 
 

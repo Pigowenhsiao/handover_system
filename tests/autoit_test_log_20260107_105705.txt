@@ -1,0 +1,36 @@
+2026/01/07 10:57:05 | AutoIt UI test start
+2026/01/07 10:57:05 | Root: C:\Users\hsi67063\Documents\Handover_system
+2026/01/07 10:57:05 | STEP: launch app
+2026/01/07 10:57:05 | WAIT: main window
+2026/01/07 10:57:16 | INFO: main window title: TtkMonitorWindow
+2026/01/07 10:57:17 | STEP: login
+2026/01/07 10:57:19 | PAUSE: wait 10s for login verification
+2026/01/07 10:57:31 | STEP: language toggle
+2026/01/07 10:57:33 | STEP: theme toggle
+2026/01/07 10:57:35 | STEP: sidebar toggle
+2026/01/07 10:57:37 | STEP: daily report inputs
+2026/01/07 10:57:43 | STEP: nav -> attendance
+2026/01/07 10:57:44 | STEP: attendance inputs
+2026/01/07 10:57:47 | STEP: nav -> equipment
+2026/01/07 10:57:48 | STEP: equipment inputs
+2026/01/07 10:57:55 | STEP: nav -> lot
+2026/01/07 10:57:56 | STEP: lot inputs
+2026/01/07 10:58:01 | STEP: nav -> summary
+2026/01/07 10:58:02 | STEP: summary dashboard
+2026/01/07 10:58:04 | STEP: nav -> summary_query
+2026/01/07 10:58:05 | STEP: summary query
+2026/01/07 10:58:08 | STEP: nav -> abnormal_history
+2026/01/07 10:58:09 | STEP: abnormal history
+2026/01/07 10:58:11 | STEP: nav -> delay_list
+2026/01/07 10:58:12 | ERROR dialog: 情報 |  [nav:delay_list]
+2026/01/07 10:58:13 | STEP: delay list
+2026/01/07 10:58:19 | STEP: nav -> summary_actual
+2026/01/07 10:58:20 | STEP: summary actual
+2026/01/07 10:58:25 | STEP: nav -> admin
+2026/01/07 10:58:26 | STEP: admin user mgmt
+2026/01/07 10:58:34 | STEP: admin master data tab
+2026/01/07 10:58:43 | STEP: admin settings tab
+2026/01/07 10:58:48 | STEP: logout
+2026/01/07 10:58:49 | STEP: close app
+2026/01/07 10:58:50 | AutoIt UI test complete
+2026/01/07 10:58:50 | Error count: 1

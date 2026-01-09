@@ -13,3 +13,14 @@ The system SHALL provide an overtime input block on the attendance page that cap
 #### Scenario: Language switching
 - **WHEN** the user switches language
 - **THEN** the overtime labels and category options update to the selected language
+
+### Requirement: Overtime Statistics Counts
+The system SHALL display regular, contract, and total overtime counts in the attendance statistics row.
+
+#### Scenario: Update overtime counts
+- **WHEN** the user updates regular or contract overtime counts
+- **THEN** the statistics row shows updated regular, contract, and total overtime counts
+
+#### Scenario: Statistics language switching
+- **WHEN** the user switches language
+- **THEN** the overtime statistics labels update to the selected language

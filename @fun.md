@@ -203,6 +203,17 @@ This script is procedural only (no function definitions).
 | --- | --- |
 | `apply_theme` | Placeholder theme application hook. |
 
+## `frontend/src/utils/theme_helpers.py`
+
+### Class: `ThemeColors`
+
+| Method | Purpose |
+| --- | --- |
+| `get_colors` | Return light/dark color palette. |
+| `get_status_bg_colors` | Return status background colors. |
+| `get_status_fg_colors` | Return status foreground colors. |
+| `get_status_colors` | Return status colors by rate. |
+
 ## `frontend/src/utils/ui_helpers.py`
 
 | Function | Purpose |
@@ -254,6 +265,13 @@ This script is procedural only (no function definitions).
 | `build_attendance_notes` | Build attendance notes from reason fields. |
 | `compute_attendance_totals` | Compute totals and overall attendance rate. |
 | `validate_attendance_values` | Validate attendance counts and overtime. |
+
+## `frontend/src/utils/crud_helpers.py`
+
+| Function | Purpose |
+| --- | --- |
+| `create_crud_manager` | Build CRUD handlers for admin options. |
+| `create_treeview_select_handler` | Sync form from Treeview selection. |
 
 ## `frontend/src/utils/import_helpers.py`
 
@@ -451,6 +469,12 @@ This script is procedural only (no function definitions).
 | --- | --- |
 | `create_modern_label` | Build a themed label. |
 | `create_modern_button` | Build a themed button. |
+
+## `frontend/src/components/calendar_picker.py`
+
+| Function | Purpose |
+| --- | --- |
+| `create_date_picker` | Build a simple date picker entry + button. |
 
 ## `frontend/src/components/password_change_dialog.py`
 

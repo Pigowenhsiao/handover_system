@@ -9,9 +9,21 @@ import sqlite3
 import time
 from typing import Dict, Generator, Optional
 
-from sqlalchemy import Column, Integer, String, Date, DateTime, Text, Float, ForeignKey, create_engine, event
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    Date,
+    DateTime,
+    Text,
+    Float,
+    ForeignKey,
+    create_engine,
+    event,
+)
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker, Session
+
 
 def _get_app_root() -> Path:
     if getattr(sys, "frozen", False):
@@ -103,6 +115,7 @@ engine = create_engine(
 
 
 def _is_sqlite_busy_error(error: Exception) -> bool:
+    """Check if an error is a SQLite busy/locked error."""
     message = str(error).lower()
     if "database is locked" in message or "database is busy" in message:
         return True
@@ -110,23 +123,21 @@ def _is_sqlite_busy_error(error: Exception) -> bool:
         orig = getattr(error, "orig", None)
         if orig:
             orig_message = str(orig).lower()
-            return "database is locked" in orig_message or "database is busy" in orig_message
+            return (
+                "database is locked" in orig_message
+                or "database is busy" in orig_message
+            )
     return False
 
 
 class RetryingSession(Session):
     def commit(self) -> None:
+        """Commit with retry logic for SQLite busy/locked errors."""
         for attempt in range(SQLITE_BUSY_RETRY_COUNT + 1):
             try:
                 super().commit()
                 return
-            except OperationalError as exc:
-                if _is_sqlite_busy_error(exc) and attempt < SQLITE_BUSY_RETRY_COUNT:
-                    self.rollback()
-                    time.sleep(SQLITE_BUSY_RETRY_BACKOFF_SEC * (attempt + 1))
-                    continue
-                raise
-            except sqlite3.OperationalError as exc:
+            except (OperationalError, sqlite3.OperationalError) as exc:
                 if _is_sqlite_busy_error(exc) and attempt < SQLITE_BUSY_RETRY_COUNT:
                     self.rollback()
                     time.sleep(SQLITE_BUSY_RETRY_BACKOFF_SEC * (attempt + 1))
@@ -198,15 +209,21 @@ class DailyReport(Base):
     summary_countermeasures: str = Column(Text, default="", nullable=False)
 
     author = relationship("User", back_populates="reports")
-    attendance_entries = relationship("AttendanceEntry", back_populates="report", cascade="all, delete-orphan")
+    attendance_entries = relationship(
+        "AttendanceEntry", back_populates="report", cascade="all, delete-orphan"
+    )
     overtime_entry = relationship(
         "OvertimeEntry",
         back_populates="report",
         cascade="all, delete-orphan",
         uselist=False,
     )
-    equipment_logs = relationship("EquipmentLog", back_populates="report", cascade="all, delete-orphan")
-    lot_logs = relationship("LotLog", back_populates="report", cascade="all, delete-orphan")
+    equipment_logs = relationship(
+        "EquipmentLog", back_populates="report", cascade="all, delete-orphan"
+    )
+    lot_logs = relationship(
+        "LotLog", back_populates="report", cascade="all, delete-orphan"
+    )
 
 
 class AttendanceEntry(Base):
@@ -299,6 +316,7 @@ class SummaryActualEntry(Base):
     scrapped: int = Column(Integer, default=0, nullable=False)
     imported_at: datetime = Column(DateTime, default=datetime.utcnow, nullable=False)
 
+
 class AttendanceSummaryDeleteLog(Base):
     __tablename__ = "attendance_summary_delete_logs"
 
@@ -309,7 +327,6 @@ class AttendanceSummaryDeleteLog(Base):
     snapshot_json: str = Column(Text, default="", nullable=False)
 
 
-
 def get_db() -> Generator[Session, None, None]:
     db = SessionLocal()
     try:
@@ -318,7 +335,9 @@ def get_db() -> Generator[Session, None, None]:
         db.close()
 
 
-def init_db(default_admin_username: str = "admin", default_admin_password: str = "admin123") -> None:
+def init_db(
+    default_admin_username: str = "admin", default_admin_password: str = "admin123"
+) -> None:
     """Initialize database tables and ensure default admin exists."""
     try:
         Base.metadata.create_all(bind=engine)
@@ -332,7 +351,9 @@ def init_db(default_admin_username: str = "admin", default_admin_password: str =
 
     try:
         with SessionLocal() as session:
-            admin = session.query(User).filter_by(username=default_admin_username).first()
+            admin = (
+                session.query(User).filter_by(username=default_admin_username).first()
+            )
             if admin is None:
                 admin = User(
                     username=default_admin_username,
@@ -375,6 +396,8 @@ def _ensure_daily_report_columns() -> None:
                 )
     except Exception as exc:
         print(f"資料庫欄位檢查失敗: {exc}")
+
+
 def _ensure_equipment_log_columns() -> None:
     try:
         with engine.begin() as conn:
@@ -386,5 +409,3 @@ def _ensure_equipment_log_columns() -> None:
                 )
     except Exception as exc:
         print(f"Equipment log migration failed: {exc}")
-
-

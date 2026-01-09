@@ -8,6 +8,15 @@ import sys
 import os
 from pathlib import Path
 
+# 保障打包後輸出中文不會觸發編碼錯誤
+try:
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
+    if hasattr(sys.stderr, "reconfigure"):
+        sys.stderr.reconfigure(encoding="utf-8")
+except Exception:
+    pass
+
 # 設置項目根目錄
 project_root = Path(__file__).parent
 os.chdir(project_root)
@@ -114,7 +123,10 @@ def prompt_continue(message, default=True):
         fallback = "y" if default else "n"
         print(f"{message} [自動回覆: {fallback}]")
         return default
-    response = input(message)
+    try:
+        response = input(message)
+    except EOFError:
+        return default
     return response.strip().lower() == 'y'
 
 
