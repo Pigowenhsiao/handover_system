@@ -1251,11 +1251,19 @@ class ModernMainFrame:
     def _bind_canvas_mousewheel(self, frame, canvas):
         """Bind mousewheel events to canvas for scrolling on Windows/Linux/Mac."""
 
+        def _safe_scroll(units):
+            if not canvas.winfo_exists() or not frame.winfo_exists():
+                return
+            try:
+                canvas.yview_scroll(units, "units")
+            except tk.TclError:
+                return
+
         def _on_mousewheel(event):
-            canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+            _safe_scroll(int(-1 * (event.delta / 120)))
 
         def _on_mousewheel_linux(event):
-            canvas.yview_scroll(int(-1 * event.num), "units")
+            _safe_scroll(int(-1 * event.num))
 
         frame.bind_all("<MouseWheel>", _on_mousewheel)
         frame.bind_all("<Button-4>", _on_mousewheel_linux)

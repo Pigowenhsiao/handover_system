@@ -185,8 +185,8 @@ Func DoLogin()
     ClickRel(0.50, 0.42)
     SafeSend("^a")
     SafeSend("admin")
-    SafeSend("{TAB}")
-    Sleep(200)
+    ClickRel(0.50, 0.48)
+    SafeSend("^a")
     SafeSend("admin123")
     ClickRel(0.50, 0.58)
     WriteLog("PAUSE: wait 10s for login verification")
@@ -202,6 +202,7 @@ Func DoLogin()
     EndIf
     If $MAIN_HWND <> 0 Then
         AbortIfEsc()
+        WinMove($MAIN_HWND, "", 0, 0, @DesktopWidth, @DesktopHeight)
         WinSetState($MAIN_HWND, "", @SW_MAXIMIZE)
         Sleep(600)
     EndIf
