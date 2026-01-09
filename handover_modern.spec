@@ -25,7 +25,18 @@ if settings_path.exists():
 
 datas += matplotlib_datas + pandas_datas + openpyxl_datas
 binaries = matplotlib_binaries + pandas_binaries + openpyxl_binaries
-hiddenimports = matplotlib_hidden + pandas_hidden + openpyxl_hidden
+extra_hiddenimports = [
+    "sqlalchemy",
+    "pandas",
+    "bcrypt",
+    "openpyxl",
+    "matplotlib",
+    "jwt",
+    "pydantic",
+]
+hiddenimports = list(
+    dict.fromkeys(matplotlib_hidden + pandas_hidden + openpyxl_hidden + extra_hiddenimports)
+)
 
 block_cipher = None
 
